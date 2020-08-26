@@ -5,14 +5,22 @@ from threading import Lock
 import yaml, os, re, pymysql, time, xlwt, sys, hashlib, sqlalchemy
 from time import sleep, time
 from sqlalchemy import create_engine
+import conf.config as config
+
+engine = None
+def get_engine():
+    global engine
+    if engine:
+        return engine
+
+    engine = create_engine("mysql+pymysql://{}:{}@{}:{}/{}?charset=utf8".format(
+        config.USER, config.PASSWORD, config.HOST, config.PORT, config.SCHEMA))
+    print('='*64,'engine inited')
+    return engine
 
 
 class MySQL:
     __pool = None
-
-    @staticmethod
-    def connect():
-        return __class__.get_connection()
 
     @staticmethod
     def get_connection():
@@ -20,13 +28,12 @@ class MySQL:
         if __class__.__pool is None:
             __class__.__pool = PooledDB(
                 pymysql,
-                # sqlalchemy,
                 10,
                 host='127.0.0.1',
                 user='manxl',
                 port=3306,
                 passwd='111',
-                db='analyst',
+                # db='analyst',
                 # use_unicode=True，
                 charset='utf8')
         # return __class__.__pool.connection()
@@ -182,7 +189,7 @@ def func(pool):
     a = a[:]
     for i in a:
         print(a)
-    # sleep(2)
+    sleep(2)
     pool.dispose(-1)
     print('1111')
     return 'ok'

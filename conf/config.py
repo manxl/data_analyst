@@ -1,0 +1,8 @@
+SCHEMA = 'analyst'
+HOST = '127.0.0.1'
+PASSWORD = '111'
+USER = 'manxl'
+PORT = 3306
+
+TEST_TS_CODE_1 = '600036.SH'
+TEST_TS_CODE_2 = '002230.SZ'
