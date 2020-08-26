@@ -1,9 +1,12 @@
 import numpy as np
 import pandas as pd
 import tushare as ts
-from sqlalchemy.types import VARCHAR, Float, Integer, DATE, DECIMAL, INT, BIGINT
+from sqlalchemy.types import VARCHAR,  Integer, DATE, DECIMAL, INT, BIGINT
 import conf.config as config
 import dao.db_pool as pool
+import dao.db_dao as dao
+import time
+from concurrent.futures import ThreadPoolExecutor
 
 __pro = ts.pro_api()
 __engine = pool.get_engine()
@@ -14,7 +17,34 @@ def df_add_y_m(df, column_name):
     df['m'] = df[column_name].apply(lambda s: int(s[4:6]))
 
 
-def get_stock_list_all():
+def need_pull_check(code, table_name, force=False, condition_column='ts_code'):
+    if not force:
+        sql = "select count(*) from {} where {} = '{}';".format(table_name, condition_column, code)
+        try:
+            size = __engine.execute(sql).fetchone()[0]
+        except Exception as e:
+            if 'f405' == e.code:
+                return True
+            else:
+                print(e)
+                exit(4)
+        return False if size > 0 else True
+    else:
+        sql = "delete from {} where {} = '{}';".format(table_name, condition_column, code)
+        try:
+            r = __engine.execute(sql)
+            print('force clean {} rows 4 {}'.format(r.rowcount, code))
+        except Exception as e:
+            if 'f405' == e.code:
+                return True
+            else:
+                print(e)
+                exit(4)
+
+        return True
+
+
+def init_stock_list_all():
     fileds = 'ts_code,symbol,name,area,industry,fullname,market,exchange,curr_type,list_status,list_date,delist_date,is_hs'
     d_l = __pro.stock_basic(exchange='', list_status='L', fields=fileds)
     print('L', len(d_l))
@@ -36,25 +66,55 @@ def get_stock_list_all():
     df.to_sql('stock_list', __engine, dtype=dtype, index=False, if_exists='replace')
 
 
-def get_stock_cf():
-    # df = pro.index_basic(ts_code='000016.SH')
-    start = '20180905'
-    # df = pro.index_weight(index_code='399300.SZ',
-    #                       start_date=start, end_date='20180930')
-    df = __pro.index_weight(index_code='399300.SZ')
+def init_stock_index(index_code, force=False):
+    table_name = 'index_weight'
+
+    if not need_pull_check(index_code, table_name, force, condition_column='index_code'):
+        return
+
+    y_start = 1990
+
+    __pool = ThreadPoolExecutor(max_workers=config.MULTIPLE, thread_name_prefix="test_")
+    fs = []
+    i = 0
+    for y_i in range(31)[::-1]:
+        y = y_start + y_i
+        first, last = dao.get_trade_date(y, 0)
+        if not first:
+            continue
+        print("{}-{}".format(y, 0))
+        first = first.strftime('%Y%m%d')
+        last = last.strftime('%Y%m%d')
+        f1 = __pool.submit(__pro.index_weight, index_code=index_code, start_date=first, end_date=first)
+        f2 = __pool.submit(__pro.index_weight, index_code=index_code, start_date=last, end_date=last)
+        fs.append(f1)
+        fs.append(f2)
+        i += 2
+        if i > 197:
+            print('198次后休息60秒')
+            time.sleep(60)
+            i = 0
+
+    df = None
+    for f2 in fs:
+        temp_df = f2.result()
+        if len(temp_df):
+            if df is None:
+                df = temp_df
+            else:
+                df = df.append(temp_df, ignore_index=True)
 
     df_add_y_m(df, 'trade_date')
 
     dtype = {'index_code': VARCHAR(length=10), 'con_code': VARCHAR(length=10), 'y': INT, 'm': INT,
-             'trade_daet': DATE(), 'weight': DECIMAL(precision=10, scale=6)}
+             'trade_date': DATE(), 'weight': DECIMAL(precision=10, scale=6)}
 
     df = df.reindex(columns='index_code,con_code,y,m,trade_date,weight'.split(','))
-    # df.reset_index(drop=True)
-    # df = df.reindex(columns='ts_code,end_date,ex_date,div_proc,stk_div,cash_div'.split(','))
-    df.to_sql('index_weight', __engine, dtype=dtype, index=False, if_exists='replace')
+
+    df.to_sql(table_name, __engine, dtype=dtype, index=False, if_exists='append')
 
 
-def get_trade_dates():
+def init_trade_date():
     template_start = '{}00101'
     template_end = '{}91231'
     data = None
@@ -106,19 +166,20 @@ def get_trade_dates():
     r = r.reindex(columns=['y', 'm', 'first', 'last'])
     r.to_sql('trade_date', __engine,
              index=False,
-             dtype={'start': DATE(), 'end': DATE(), 'y': Integer(), 'm': INT()}
+             dtype={'first': DATE(), 'last': DATE(), 'y': Integer(), 'm': INT()}
              , if_exists='replace')
 
 
-def init_stock_monthly(ts_code, force=False):
-    # TODO
-    print('{} {}'.format(__file__, __engine))
+def init_stock_price_monthly(ts_code, force=False):
     table_name = 'stock_price_monthly'
 
     if not need_pull_check(ts_code, table_name, force):
         return
 
     df = __pro.monthly(ts_code=ts_code, fields='ts_code,trade_date,open,high,low,close,vol,amount')
+    if not len(df):
+        return
+
     df_add_y_m(df, 'trade_date')
     dtype = {'ts_code': VARCHAR(length=10), 'trade_date': DATE(), 'y': INT, 'm': INT,
              'open': DECIMAL(precision=8, scale=2), 'high': DECIMAL(precision=8, scale=2),
@@ -131,10 +192,11 @@ def init_dividend(ts_code, force=False):
     table_name = 'stock_dividend'
 
     if not need_pull_check(ts_code, table_name, force):
-        print('need not 2 pull {}'.format(ts_code))
+        print('need not 2 pull {} -> {}'.format(table_name, ts_code))
         return
+    else:
+        print('start 2 pull {} -> {} income .'.format(table_name, ts_code))
 
-    print('start 2 pull {} dividend .'.format(ts_code))
     df = __pro.dividend(ts_code=ts_code, fields='ts_code,end_date,div_proc,stk_div,cash_div,ex_date')
     df = df[df['div_proc'].str.contains('实施')]
     df.reset_index(drop=True)
@@ -146,39 +208,56 @@ def init_dividend(ts_code, force=False):
     df.to_sql(table_name, __engine, dtype=dtype, index=False, if_exists='append')
 
 
-def need_pull_check(code, table_name, force=False, condition_column='ts_code'):
-    if not force:
-        sql = "select count(*) from {} where {} = '{}';".format(table_name, condition_column, code)
-        try:
-            size = __engine.execute(sql).fetchone()[0]
-        except Exception as e:
-            if 'f405' == e.code:
-                return True
-            else:
-                print(e)
-                exit(4)
-        return False if size > 0 else True
-    else:
-        sql = "delete from {} where {} = '{}';".format(table_name, condition_column, code)
-        try:
-            r = __engine.execute(sql)
-            print('force clean {} rows 4 {}'.format(r.rowcount, code))
-        except Exception as e:
-            if 'f405' == e.code:
-                return True
-            else:
-                print(e)
-                exit(4)
+def init_income(ts_code, force=False):
+    table_name = 'stock_income'
 
-        return True
+    if not need_pull_check(ts_code, table_name, force):
+        print('need not 2 pull {} -> {}'.format(table_name, ts_code))
+        return
+    else:
+        print('start 2 pull {} -> {} income .'.format(table_name, ts_code))
+
+    # df = pro.income(ts_code='600000.SH', start_date='20180101', end_date='20180730', fields='ts_code,ann_date,f_ann_date,end_date,report_type,comp_type,basic_eps,diluted_eps')
+    df = __pro.income(ts_code=ts_code, start_date='19901201', end_date='20210101')
+    df.reset_index(drop=True)
+    df.to_sql(table_name, __engine, index=False, if_exists='append')
+
+
+def init_balancesheet(ts_code, force=False):
+    table_name = 'stock_balancesheet'
+
+    if not need_pull_check(ts_code, table_name, force):
+        print('need not 2 pull {} -> {}'.format(table_name, ts_code))
+        return
+    else:
+        print('start 2 pull {} -> {} income .'.format(table_name, ts_code))
+
+    print('start 2 pull {} income .'.format(ts_code))
+    # df = pro.income(ts_code='600000.SH', start_date='20180101', end_date='20180730', fields='ts_code,ann_date,f_ann_date,end_date,report_type,comp_type,basic_eps,diluted_eps')
+    df = __pro.balancesheet(ts_code=ts_code, start_date='19901201', end_date='20210101')
+    df.reset_index(drop=True)
+    df.to_sql(table_name, __engine, index=False, if_exists='append')
+
+
+def init_cashflow(ts_code, force=False):
+    table_name = 'stock_cashflow'
+
+    if not need_pull_check(ts_code, table_name, force):
+        print('need not 2 pull {} -> {}'.format(table_name, ts_code))
+        return
+    else:
+        print('start 2 pull {} -> {} income .'.format(table_name, ts_code))
+
+    # df = pro.income(ts_code='600000.SH', start_date='20180101', end_date='20180730', fields='ts_code,ann_date,f_ann_date,end_date,report_type,comp_type,basic_eps,diluted_eps')
+    df = __pro.cashflow(ts_code=ts_code, start_date='19901201', end_date='20210101')
+    df.reset_index(drop=True)
+    df.to_sql(table_name, __engine, index=False, if_exists='append')
 
 
 if __name__ == '__main__':
     ts_code = config.TEST_TS_CODE_1
-    # TuShareDao.get_stock_list_all()
-    # TuShareDao.get_stock_cf()
-    # TuShareDao.get_trade_dates()
-    init_stock_monthly(ts_code)
-    # TuShareDao.init_dividend(ts_code)
-    # TuShareDao.init_dividend('002230.SZ')
-    # test_calc_repay()
+    index_code = config.TEST_INDEX_CODE_1
+    # init_stock_index(index_code)
+    # init_income(ts_code,force=True)
+    # init_balancesheet(ts_code, force=True)
+    # init_cashflow(ts_code, force=True)
