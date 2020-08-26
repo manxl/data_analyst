@@ -70,5 +70,8 @@ class Test:
 
 
 if __name__ == '__main__':
-    Test.test_date()
+    # Test.test_date()
     # Test.test_info()
+    print(2**31)
+
+

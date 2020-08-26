@@ -1,34 +1,47 @@
 import datetime
-import pandas as pd
 import numpy as np
+import pandas as pd
 import tushare as ts
-from sqlalchemy.types import VARCHAR, DATE, INT, Integer
 from sqlalchemy import create_engine
+from sqlalchemy.types import VARCHAR, Float, Integer, DATE, DECIMAL, INT, BIGINT
 
 db_name = 'analyst'
 
 
 def get_engine():
-    return create_engine("mysql+pymysql://manxl:111@127.0.0.1:3306/{}?charset=utf8".format(db_name), pool_size=20)
+    return create_engine("mysql+pymysql://manxl:111@127.0.0.1:3306/{}?charset=utf8".format(db_name))
 
 
 pro = ts.pro_api()
 
 
 class TuShareDao:
+    @staticmethod
+    def df_add_y_m(df, column_name):
+        df['y'] = df[column_name].apply(lambda s: int(s[:4]))
+        df['m'] = df[column_name].apply(lambda s: int(s[4:6]))
 
     @staticmethod
     def get_stock_list_all():
-        fileds = 'ts_code,symbol,name,area,industry,fullname,enname,market,exchange,curr_type,list_status,list_date,delist_date,is_hs'
+        fileds = 'ts_code,symbol,name,area,industry,fullname,market,exchange,curr_type,list_status,list_date,delist_date,is_hs'
         d_l = pro.stock_basic(exchange='', list_status='L', fields=fileds)
         print('L', len(d_l))
         d_d = pro.stock_basic(exchange='', list_status='D', fields=fileds)
         print('D', len(d_d))
         d_p = pro.stock_basic(exchange='', list_status='P', fields=fileds)
         print('P', len(d_p))
-        data = d_l.append(d_d).append(d_p)
-        print('all size:', len(data))
-        data.to_sql('stock_list', get_engine(), schema=db_name)
+        df = d_l.append(d_d).append(d_p)
+        print('all size:', len(df))
+
+        dtype = {'ts_code': VARCHAR(length=10), 'symbol': VARCHAR(length=8), 'name': VARCHAR(length=20),
+                 'area': VARCHAR(length=10), 'industry': VARCHAR(length=32), 'fullname': VARCHAR(length=32),
+                 'market': VARCHAR(length=10), 'exchange': VARCHAR(length=10), 'curr_type': VARCHAR(length=5),
+                 'list_status': VARCHAR(length=1), 'list_date': DATE(), 'delist_date': DATE(),
+                 'is_hs': VARCHAR(length=1)}
+
+        # df.reset_index(drop=True)
+        # df = df.reindex(columns='ts_code,end_date,ex_date,div_proc,stk_div,cash_div'.split(','))
+        df.to_sql('stock_list', get_engine(), dtype=dtype, index=False, if_exists='replace')
 
     @staticmethod
     def get_stock_cf():
@@ -38,11 +51,15 @@ class TuShareDao:
         #                       start_date=start, end_date='20180930')
         df = pro.index_weight(index_code='399300.SZ')
 
-        print(df)
-        print(len(df))
-        d = datetime.datetime.strptime(start, '%Y%m%d')
-        w = d.weekday()
-        print(w)
+        __class__.df_add_y_m(df, 'trade_date')
+
+        dtype = {'index_code': VARCHAR(length=10), 'con_code': VARCHAR(length=10), 'y': INT, 'm': INT,
+                 'trade_daet': DATE(), 'weight': DECIMAL(precision=10, scale=6)}
+
+        df = df.reindex(columns='index_code,con_code,y,m,trade_date,weight'.split(','))
+        # df.reset_index(drop=True)
+        # df = df.reindex(columns='ts_code,end_date,ex_date,div_proc,stk_div,cash_div'.split(','))
+        df.to_sql('index_weight', get_engine(), dtype=dtype, index=False, if_exists='replace')
 
     @staticmethod
     def get_trade_dates():
@@ -62,10 +79,9 @@ class TuShareDao:
 
         # data.to_sql('trade_date_o', get_engine(), if_exists='replace', schema=db_name)
         df = data
-        df['y'] = df['cal_date'].apply(lambda s: int(s[:4]))
-        df['m'] = df['cal_date'].apply(lambda s: int(s[4:6]))
-        # df['cal_date'] = df['cal_date'].astype('M8[D]')
-        # df.reset_index(drop=True)
+        __class__.df_add_y_m(df, 'cal_date')
+        # df['y'] = df['cal_date'].apply(lambda s: int(s[:4]))
+        # df['m'] = df['cal_date'].apply(lambda s: int(s[4:6]))
 
         df.set_index(['y', 'm', 'cal_date'])
         df = df[df['is_open'] == 1]
@@ -102,16 +118,73 @@ class TuShareDao:
                  , if_exists='replace', schema=db_name)
 
     @staticmethod
-    def get_divid():
-        # df = pro.dividend(ts_code='600036.SH', fields='ts_code,div_proc,stk_div,record_date,ex_date')
-        # df = pro.dividend(ts_code='600036.SH')
-        df = pro.dividend(ts_code='002230.SZ')
-        print(df)
-        df.to_sql('stock_divide', get_engine(), schema=db_name, if_exists='append')
+    def init_stock_monthly(ts_code):
+        # df = pro.monthly(ts_code=ts_code, start_date='20180101', end_date='20181101', fields='ts_code,trade_date,open,high,low,close,vol,amount')
+        df = pro.monthly(ts_code=ts_code, fields='ts_code,trade_date,open,high,low,close,vol,amount')
+        __class__.df_add_y_m(df, 'trade_date')
+
+
+        dtype = {'ts_code': VARCHAR(length=10), 'trade_date': DATE(), 'y': INT, 'm': INT,
+                 'open': DECIMAL(precision=8, scale=2), 'high': DECIMAL(precision=8, scale=2),
+                 'low': DECIMAL(precision=8, scale=2), 'close': DECIMAL(precision=8, scale=2),
+                 # 'vol': DECIMAL(precision=16, scale=2), 'amount': DECIMAL(precision=16, scale=2)}
+                 'vol': BIGINT(), 'amount': BIGINT()}
+        df.to_sql('stock_price_monthly', get_engine(), dtype=dtype, index=False, if_exists='replace')
+
+    @staticmethod
+    def init_dividend(ts_code, force=False):
+        engine = get_engine()
+
+        sql = "select count(*) from stock_divide where ts_code = '{}';".format(ts_code)
+        size = engine.execute(sql).fetchone()[0]
+        if size > 0:
+            return
+
+        df = pro.dividend(ts_code=ts_code, fields='ts_code,end_date,div_proc,stk_div,cash_div,ex_date')
+        df = df[df['div_proc'].str.contains('实施')]
+        df.reset_index(drop=True)
+        df = df.reindex(columns='ts_code,end_date,ex_date,div_proc,stk_div,cash_div'.split(','))
+        dtype = {'ts_code': VARCHAR(length=10), 'end_date': DATE(), 'div_proc': VARCHAR(length=10),
+                 'stk_div': DECIMAL(precision=10, scale=8), 'cash_div': DECIMAL(precision=12, scale=8),
+                 'ex_date': DATE()}
+        df.to_sql('stock_dividend', get_engine(), dtype=dtype, index=False, if_exists='append')
+
+    @staticmethod
+    def get_dividend(ts_code, start, end):
+        sql = "select * from stock_divide where ts_code= '{}' and ex_date between '{}' and '{}';"
+        sql = sql.format(ts_code, start, end)
+        df = pd.read_sql_query(sql, get_engine())
+        return df
+
+
+def test_calc_repay():
+    ts_code = '002230.SZ'
+    # ts_code = '600036.SH'
+    df = TuShareDao.get_dividend(ts_code, '2001-01-01', '2019-01-01')
+    init_stock = 100
+    inc_cash = 0.0
+    inc_stock = init_stock
+
+    df = df[::-1]
+    # for row in df.itertuples():
+    for i, row in df.iterrows():
+        # for row in df.items():
+        cash = row['cash_div']
+        stk = row['stk_div']
+        if cash:
+            inc_cash += inc_stock * cash
+        if stk:
+            inc_stock *= 1 + stk
+        # print("i:{}\tstk:{}\tcash:{}\ti_cash:{}\ti_stk:{}".format(i, stk, cash, inc_cash, inc_stock))
+        print("{}\t{}\t{}\t{}\t{}".format(i, stk, cash, inc_cash, inc_stock))
 
 
 if __name__ == '__main__':
-    # TuShareDao.get_stock_cf()
+    ts_code = '600036.SH'
     # TuShareDao.get_stock_list_all()
-    TuShareDao.get_trade_dates()
-    # TuShareDao.get_divid()
+    # TuShareDao.get_stock_cf()
+    # TuShareDao.get_trade_dates()
+    TuShareDao.init_stock_monthly(ts_code)
+    # TuShareDao.init_dividend(ts_code)
+    # TuShareDao.init_dividend('002230.SZ')
+    # test_calc_repay()
