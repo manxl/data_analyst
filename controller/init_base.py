@@ -20,7 +20,7 @@ def init_target_stock_base(ts_code):
     ts_dao.init_balancesheet(ts_code)
     ts_dao.init_cashflow(ts_code)
     ts_dao.init_dividend(ts_code)
-
+    ts_dao.init_fina_indicator(ts_code)
 
 if __name__ == '__main__':
     # ts_code = '000022.SZ'

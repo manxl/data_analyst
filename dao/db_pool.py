@@ -8,14 +8,15 @@ from sqlalchemy import create_engine
 import conf.config as config
 
 engine = None
+
+
 def get_engine():
     global engine
     if engine:
         return engine
-
     engine = create_engine("mysql+pymysql://{}:{}@{}:{}/{}?charset=utf8".format(
         config.USER, config.PASSWORD, config.HOST, config.PORT, config.SCHEMA))
-    print('='*64,'engine inited')
+    print('=' * 64, 'engine inited')
     return engine
 
 
