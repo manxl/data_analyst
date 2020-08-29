@@ -203,11 +203,14 @@ def init_trade_date():
              , if_exists='replace')
 
 
-def init_stock_price_monthly(ts_code, force=False):
+def init_stock_price_monthly(ts_code, force=None):
     table_name = 'stock_price_monthly'
 
     if not need_pull_check(ts_code, table_name, force):
+        print('need not 2 pull {} -> {}'.format(table_name, ts_code))
         return
+    else:
+        print('start 2 pull {} -> {} income .'.format(table_name, ts_code))
 
     df = __pro.monthly(ts_code=ts_code, fields='ts_code,trade_date,open,high,low,close,vol,amount')
     if not len(df):
@@ -221,7 +224,7 @@ def init_stock_price_monthly(ts_code, force=False):
     df.to_sql(table_name, get_engine(), dtype=dtype, index=False, if_exists='append')
 
 
-def init_dividend(ts_code, force=False):
+def init_dividend(ts_code, force=None):
     table_name = 'stock_dividend'
 
     if not need_pull_check(ts_code, table_name, force):
@@ -241,7 +244,7 @@ def init_dividend(ts_code, force=False):
     df.to_sql(table_name, get_engine(), dtype=dtype, index=False, if_exists='append')
 
 
-def init_balancesheet(ts_code, force=False):
+def init_balancesheet(ts_code, force=None):
     table_name = 'stock_balancesheet'
 
     if not need_pull_check(ts_code, table_name, force):
@@ -311,7 +314,7 @@ def init_balancesheet(ts_code, force=False):
     df.to_sql(table_name, get_engine(), dtype=dtype, index=False, if_exists='append')
 
 
-def init_income(ts_code, force=False):
+def init_income(ts_code, force=None):
     table_name = 'stock_income'
 
     if not need_pull_check(ts_code, table_name, force):
@@ -354,7 +357,7 @@ def init_income(ts_code, force=False):
     df.to_sql(table_name, get_engine(), dtype=dtype, index=False, if_exists='append')
 
 
-def init_cashflow(ts_code, force=False):
+def init_cashflow(ts_code, force=None):
     table_name = 'stock_cashflow'
 
     if not need_pull_check(ts_code, table_name, force):
@@ -410,7 +413,7 @@ def init_cashflow(ts_code, force=False):
     df.to_sql(table_name, get_engine(), dtype=dtype, index=False, if_exists='append')
 
 
-def init_fina_indicator(ts_code, force=False):
+def init_fina_indicator(ts_code, force=None):
     table_name = 'stock_fina_indicator'
 
     if not need_pull_check(ts_code, table_name, force):
@@ -494,6 +497,6 @@ if __name__ == '__main__':
     index_code = config.TEST_INDEX_CODE_1
     # init_stock_index(index_code)
     # init_balancesheet(ts_code, force='drop')
-    init_income(ts_code, force='drop')
+    # init_income(ts_code, force='drop')
     # init_cashflow(ts_code, force='drop')
     # init_fina_indicator(ts_code, force='drop')
