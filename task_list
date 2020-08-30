@@ -3,3 +3,32 @@
 4   match report and tushare columns
 4   pull pe
 3   pull Management stock
+
+
+
+set @a3 := 0.0425 ;
+select @a3;
+
+drop view if exists list_join ;
+create view list_join as
+select l.ts_code,l.name,l.list_status,l.list_date,l.delist_date,
+        b.y,b.t,m.m,
+        b.total_share,b.total_liab,b.total_cur_assets,b.total_assets,
+        f.dt_eps,f.eps,f.current_ratio,f.quick_ratio,
+        m.close,
+        d.stk_div,d.cash_div
+from stock_list l,
+     stock_balancesheet b,
+     stock_fina_indicator f,
+     stock_price_monthly m,
+     stock_dividend d
+where l.ts_code = b.ts_code and l.list_date <= b.end_date and
+        b.ts_code = f.ts_code and b.y = f.y and b.t = f.t and
+        b.ts_code = m.ts_code and b.y = m.y and  b.t =m.m/3  and
+        b.ts_code = d.ts_code and b.end_date = d.end_date
+;
+
+
+
+
+
