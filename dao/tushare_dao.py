@@ -9,6 +9,8 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 
 __pro = ts.pro_api()
+
+
 # __engine = pool.get_engine()
 
 
@@ -78,6 +80,7 @@ def need_pull_check(code, table_name, force=None, condition_column='ts_code'):
 
 
 def init_stock_list_all():
+    print('start init list...')
     fileds = 'ts_code,symbol,name,area,industry,fullname,market,exchange,curr_type,list_status,list_date,delist_date,is_hs'
     d_l = __pro.stock_basic(exchange='', list_status='L', fields=fileds)
     print('L', len(d_l))
@@ -98,8 +101,10 @@ def init_stock_list_all():
     # df = df.reindex(columns='ts_code,end_date,ex_date,div_proc,stk_div,cash_div'.split(','))
     df.to_sql('stock_list', get_engine(), dtype=dtype, index=False, if_exists='replace')
 
+    print('finished init list.')
 
-def init_stock_index(index_code, force=False):
+
+def init_stock_index(index_code, force=None):
     table_name = 'index_weight'
 
     if not need_pull_check(index_code, table_name, force, condition_column='index_code'):
@@ -210,7 +215,7 @@ def init_stock_price_monthly(ts_code, force=None):
         print('need not 2 pull {} -> {}'.format(table_name, ts_code))
         return
     else:
-        print('start 2 pull {} -> {} income .'.format(table_name, ts_code))
+        print('start 2 pull {} -> {} .'.format(table_name, ts_code))
 
     df = __pro.monthly(ts_code=ts_code, fields='ts_code,trade_date,open,high,low,close,vol,amount')
     if not len(df):
@@ -231,7 +236,7 @@ def init_dividend(ts_code, force=None):
         print('need not 2 pull {} -> {}'.format(table_name, ts_code))
         return
     else:
-        print('start 2 pull {} -> {} income .'.format(table_name, ts_code))
+        print('start 2 pull {} -> {} .'.format(table_name, ts_code))
 
     df = __pro.dividend(ts_code=ts_code, fields='ts_code,end_date,div_proc,stk_div,cash_div,ex_date')
     df = df[df['div_proc'].str.contains('实施')]
@@ -251,7 +256,7 @@ def init_balancesheet(ts_code, force=None):
         print('need not 2 pull {} -> {}'.format(table_name, ts_code))
         return
     else:
-        print('start 2 pull {} -> {} income .'.format(table_name, ts_code))
+        print('start 2 pull {} -> {} .'.format(table_name, ts_code))
 
     # df = pro.income(ts_code='600000.SH', start_date='20180101', end_date='20180730', fields='ts_code,ann_date,f_ann_date,end_date,report_type,comp_type,basic_eps,diluted_eps')
 
@@ -321,7 +326,7 @@ def init_income(ts_code, force=None):
         print('need not 2 pull {} -> {}'.format(table_name, ts_code))
         return
     else:
-        print('start 2 pull {} -> {} income .'.format(table_name, ts_code))
+        print('start 2 pull {} -> {} '.format(table_name, ts_code))
 
     dtype = {'ts_code': VARCHAR(length=10), 'ann_date': DATE(), 'f_ann_date': DATE(),
              'end_date': DATE(), 'report_type': VARCHAR(length=1), 'comp_type': VARCHAR(length=1),
@@ -364,7 +369,7 @@ def init_cashflow(ts_code, force=None):
         print('need not 2 pull {} -> {}'.format(table_name, ts_code))
         return
     else:
-        print('start 2 pull {} -> {} income .'.format(table_name, ts_code))
+        print('start 2 pull {} -> {} .'.format(table_name, ts_code))
 
     dtype = {'ts_code': VARCHAR(length=10), 'ann_date': DATE(), 'f_ann_date': DATE(),
              'end_date': DATE(), 'comp_type': VARCHAR(length=1), 'report_type': VARCHAR(length=1),
@@ -420,7 +425,7 @@ def init_fina_indicator(ts_code, force=None):
         print('need not 2 pull {} -> {}'.format(table_name, ts_code))
         return
     else:
-        print('start 2 pull {} -> {} income .'.format(table_name, ts_code))
+        print('start 2 pull {} -> {} .'.format(table_name, ts_code))
 
     dtype = {'ts_code': VARCHAR(length=10), 'ann_date': DATE(), 'end_date': DATE(),
              'eps': FLOAT(), 'dt_eps': FLOAT(), 'total_revenue_ps': FLOAT(),
