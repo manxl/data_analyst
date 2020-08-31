@@ -1,6 +1,8 @@
 import pandas as pd
 from dao.db_pool import get_engine
 from conf.config import SCHEMA
+import numpy as np
+
 
 def get_stock_price_monthly(ts_code, trade_date):
     sql = "select * from stock_price_monthly where ts_code = '{}' and trade_date = '{}'"
@@ -38,8 +40,8 @@ def get_index_distinct_codes(index_code):
     return df
 
 
-def get_list_all():
-    sql = "select * from stock_list;"
+def get_list_all(limit=None):
+    sql = "select * from stock_list " + ('' if limit is None else 'limit {}'.format(limit)) + ';'
     df = pd.read_sql_query(sql, get_engine())
     if not len(df):
         print('error sql:')

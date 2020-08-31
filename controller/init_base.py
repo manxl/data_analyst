@@ -25,8 +25,8 @@ def init_matrix_index_needs(index_code):
         fs.append(f)
 
 
-def init_stock_all():
-    list_all = db.get_list_all()
+def init_stock_all(limit=None):
+    list_all = db.get_list_all(limit)
     __pool = ThreadPoolExecutor(max_workers=config.MULTIPLE, thread_name_prefix="test_")
     fs = []
     for ts_code in list_all['ts_code']:
@@ -46,7 +46,10 @@ def init_target_stock_base(ts_code, force=None):
 if __name__ == '__main__':
     # ts_code = '000022.SZ'
     # ts_code = config.TEST_TS_CODE_2
-    # init_target_stock_base(ts_code)
+    # init_target_stock_base('601318.SH')
     # init_matrix_index_needs(config.TEST_INDEX_CODE_1)
     # init_base()
-    init_stock_all()
+    init_stock_all(10)
+    # ts_dao.init_dividend(config.TEST_TS_CODE_3, force='drop')
+
+    pass

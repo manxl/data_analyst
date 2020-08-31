@@ -4,6 +4,7 @@ from dao.db_pool import get_engine
 from sqlalchemy.types import VARCHAR, Integer, DATE, DECIMAL, INT, BIGINT, FLOAT, Float, NUMERIC
 import re
 
+
 # import conf.config as config
 # import stock.calc as calc
 # import dao.tushare_dao as tsdao
@@ -15,13 +16,22 @@ def drop_more_nan_row(df, column_name):
 
 def test():
     import pandas as pd
-    data = [[1, 1, 1, 2, 3, 3], [0.2, 0.3, 0.4, 0.1, 0.2, 0.4]]
-    columns = list('abcdef')
-    dtype = {"b": FLOAT(), 'a': Float()}
-    df = pd.DataFrame(data, columns=columns)
-    df.to_sql('test_table', get_engine(), dtype=dtype, index=False, if_exists='replace')
-
-    # df.to_sql('test',get_engine())
+    a = pd.DataFrame({'a': [1, 2, 3], 'b': [2, 3, 4]})
+    b = pd.DataFrame({'c': [11, 22, 33], 'd': [22, 33, 44]})
+    c = pd.concat([a, b], axis=1)
+    print('-' * 32, 'a')
+    print(a)
+    print('-' * 32, 'b')
+    print(b)
+    print('-' * 32, 'c')
+    print(c)
+    d = c.reset_index().rename(columns={'index': 'i'})
+    print(d)
+    d['c'] = 'kknd'
+    print(d)
+    # e = d.sort_index(by=['i'], ascending=False)
+    e = d.sort_values(by=['i'], ascending=False)
+    print(e)
 
 
 class Student:
@@ -50,6 +60,6 @@ def match_names(file_path, dict_sheet, like):
         if o:
             print('{}-{}'.format(desc, name))
 
+
 if __name__ == '__main__':
-    like = '金融负债'
-    match_names(file_path, dict_sheet, like)
+    test()

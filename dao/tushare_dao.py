@@ -15,17 +15,19 @@ __pro = ts.pro_api()
 
 
 def df_add_y_m(df, column_name):
-    df['y'] = df[column_name].apply(lambda s: int(s[:4]))
-    df['m'] = df[column_name].apply(lambda s: int(s[4:6]))
-
-
-def df_add_y_t(df, column_name):
     loc = np.where(df.columns.values.T == column_name)[0][0]
     loc = int(loc) + 1
     y = df[column_name].apply(lambda s: int(s[:4]))
-    t = df[column_name].apply(lambda s: int(s[4:6]) / 3)
+    t = df[column_name].apply(lambda s: int(s[4:6]))
 
-    df.insert(loc, 't', t)
+    df.insert(loc, 'm', t)
+    df.insert(loc, 'y', y)
+
+
+def df_add_y(df, column_name):
+    loc = np.where(df.columns.values.T == column_name)[0][0]
+    loc = int(loc) + 1
+    y = df[column_name].apply(lambda s: int(s[:4]))
     df.insert(loc, 'y', y)
 
 
@@ -190,7 +192,7 @@ def init_trade_date():
     #     print(a)
     #     print(g)
     r1 = grouped_m['cal_date'].agg([np.min, np.max])
-    r1 = r1.rename(columns={'amin': 'first', 'amax': 'last'})
+    r1 = r1.rename(columns={'amin': 'first', '': 'last'})
     r1['y'] = pd.Series(r1.index.get_level_values('y'), index=r1.index)
     r1['m'] = pd.Series(r1.index.get_level_values('m'), index=r1.index)
 
@@ -230,7 +232,7 @@ def init_stock_price_monthly(ts_code, force=None):
 
 
 def init_dividend(ts_code, force=None):
-    table_name = 'stock_dividend'
+    table_name = 'stock_dividend_detail'
 
     if not need_pull_check(ts_code, table_name, force):
         print('need not 2 pull {} -> {}'.format(table_name, ts_code))
@@ -240,11 +242,36 @@ def init_dividend(ts_code, force=None):
 
     df = __pro.dividend(ts_code=ts_code, fields='ts_code,end_date,div_proc,stk_div,cash_div,ex_date')
     df = df[df['div_proc'].str.contains('实施')]
+    df_add_y(df, 'end_date')
     df.reset_index(drop=True)
-    df = df.reindex(columns='ts_code,end_date,ex_date,div_proc,stk_div,cash_div'.split(','))
+    df = df.reindex(columns='ts_code,end_date,y,ex_date,div_proc,stk_div,cash_div'.split(','))
     dtype = {'ts_code': VARCHAR(length=10), 'end_date': DATE(), 'div_proc': VARCHAR(length=10),
              'stk_div': DECIMAL(precision=10, scale=8), 'cash_div': DECIMAL(precision=12, scale=8),
-             'ex_date': DATE()}
+             'ex_date': DATE(), 'y': INT()}
+
+    df.to_sql(table_name, get_engine(), dtype=dtype, index=False, if_exists='append')
+
+    '''
+        statistical
+    '''
+    table_name = 'stock_dividend'
+    if not need_pull_check(ts_code, table_name, force):
+        print('need not 2 pull {} -> {}'.format(table_name, ts_code))
+        return
+    else:
+        print('start 2 pull {} -> {} .'.format(table_name, ts_code))
+
+    grouped = df.groupby('y')
+    r = grouped['stk_div', 'cash_div'].agg([np.sum])
+    r = r.reset_index()
+    r = r.rename(columns={('stk_div', 'sum'): 'stk_div', ('cash_div', 'sum'): 'cash_div', ('y'): 'y'})
+    r = r.sort_values(by=['y'], ascending=False)
+
+    data = {'ts_code': np.full((len(r)), ts_code), 'y': r['y'], 'stk_div': r[('stk_div', 'sum')],
+            'cash_div': r[('cash_div', 'sum')]}
+    df = pd.DataFrame(data)
+    dtype = {'ts_code': VARCHAR(length=10), 'end_date': DATE(), 'y': INT(),
+             'stk_div': DECIMAL(precision=10, scale=8), 'cash_div': DECIMAL(precision=12, scale=8)}
 
     df.to_sql(table_name, get_engine(), dtype=dtype, index=False, if_exists='append')
 
@@ -261,7 +288,7 @@ def init_balancesheet(ts_code, force=None):
     # df = pro.income(ts_code='600000.SH', start_date='20180101', end_date='20180730', fields='ts_code,ann_date,f_ann_date,end_date,report_type,comp_type,basic_eps,diluted_eps')
 
     dtype = {'ts_code': VARCHAR(length=10), 'ann_date': DATE(), 'f_ann_date': DATE(),
-             'y': INT(), 't': INT(),
+             'y': INT(), 'm': INT(),
              'end_date': DATE(), 'report_type': VARCHAR(length=1), 'comp_type': VARCHAR(length=1),
              'total_share': BIGINT(), 'cap_rese': BIGINT(), 'undistr_porfit': BIGINT(),
              'surplus_rese': BIGINT(), 'special_rese': BIGINT(), 'money_cap': BIGINT(),
@@ -313,7 +340,7 @@ def init_balancesheet(ts_code, force=None):
     # df = df.drop_duplicates(["end_date"], keep="first")
     df = drop_more_nan_row(df, 'end_date')
     # format
-    df_add_y_t(df, 'end_date')
+    df_add_y_m(df, 'end_date')
 
     df.reset_index(drop=True)
     df.to_sql(table_name, get_engine(), dtype=dtype, index=False, if_exists='append')
@@ -329,6 +356,7 @@ def init_income(ts_code, force=None):
         print('start 2 pull {} -> {} '.format(table_name, ts_code))
 
     dtype = {'ts_code': VARCHAR(length=10), 'ann_date': DATE(), 'f_ann_date': DATE(),
+             'y': INT(), 'm': INT(),
              'end_date': DATE(), 'report_type': VARCHAR(length=1), 'comp_type': VARCHAR(length=1),
              'basic_eps': BIGINT(), 'diluted_eps': BIGINT(), 'total_revenue': BIGINT(),
              'revenue': BIGINT(), 'int_income': BIGINT(), 'prem_earned': BIGINT(),
@@ -355,7 +383,7 @@ def init_income(ts_code, force=None):
     # clean
     df = drop_more_nan_row(df, 'end_date')
     # format
-    df_add_y_t(df, 'end_date')
+    df_add_y_m(df, 'end_date')
     #
     df.reset_index(drop=True)
 
@@ -372,6 +400,7 @@ def init_cashflow(ts_code, force=None):
         print('start 2 pull {} -> {} .'.format(table_name, ts_code))
 
     dtype = {'ts_code': VARCHAR(length=10), 'ann_date': DATE(), 'f_ann_date': DATE(),
+             'y': INT(), 'm': INT(),
              'end_date': DATE(), 'comp_type': VARCHAR(length=1), 'report_type': VARCHAR(length=1),
              'net_profit': BIGINT(), 'finan_exp': BIGINT(), 'c_fr_sale_sg': BIGINT(),
              'recp_tax_rends': BIGINT(), 'n_depos_incr_fi': BIGINT(), 'n_incr_loans_cb': BIGINT(),
@@ -411,7 +440,7 @@ def init_cashflow(ts_code, force=None):
     # df = df.drop_duplicates(["end_date"], keep="first")
     df = drop_more_nan_row(df, 'end_date')
 
-    df_add_y_t(df, 'end_date')
+    df_add_y_m(df, 'end_date')
 
     df.reset_index(drop=True)
 
@@ -428,6 +457,7 @@ def init_fina_indicator(ts_code, force=None):
         print('start 2 pull {} -> {} .'.format(table_name, ts_code))
 
     dtype = {'ts_code': VARCHAR(length=10), 'ann_date': DATE(), 'end_date': DATE(),
+             'y': INT(), 'm': INT(),
              'eps': FLOAT(), 'dt_eps': FLOAT(), 'total_revenue_ps': FLOAT(),
              'revenue_ps': FLOAT(), 'capital_rese_ps': FLOAT(), 'surplus_rese_ps': FLOAT(),
              'undist_profit_ps': FLOAT(), 'extra_item': FLOAT(), 'profit_dedt': FLOAT(),
@@ -490,7 +520,7 @@ def init_fina_indicator(ts_code, force=None):
     # df = df.drop_duplicates(["end_date"], keep="first")
     # df = drop_more_nan_row(df, 'end_date')
 
-    df_add_y_t(df, 'end_date')
+    df_add_y_m(df, 'end_date')
 
     df.reset_index(drop=True)
 
