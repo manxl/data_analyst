@@ -24,10 +24,29 @@ from stock_list l,
 where l.ts_code = b.ts_code and l.list_date <= b.end_date and
         b.ts_code = f.ts_code and b.y = f.y and b.t = f.t and
         b.ts_code = m.ts_code and b.y = m.y and  b.t =m.m/3  and
-        b.ts_code = d.ts_code and b.end_date = d.end_date
-;
+        b.ts_code = d.ts_code and b.end_date = d.end_date;
 
 
 
+
+
+
+
+
+低估标准
+	盈利率 L3A*2
+	股息 > L3A 2/3
+	市盈率位于最底的10%区间
+	股价 < 每股有形资产账面价值 2/3
+	股价 < 流动资产 2/3
+盈利能力
+	10年 盈利增长率7%
+	10年 盈利能力下跌超5% 最多2年
+
+财务状况
+	流动比率 > 2 |  速动比率 > 1
+	债务 < 股本
+		总债务小于股东权益
+	流动资产价值 > 总负债 1/2
 
 

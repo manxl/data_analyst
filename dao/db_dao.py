@@ -40,13 +40,43 @@ def get_index_distinct_codes(index_code):
     return df
 
 
-def get_list_all(limit=None):
-    sql = "select * from stock_list " + ('' if limit is None else 'limit {}'.format(limit)) + ';'
+def get_list_all(limit=None, sql=None):
+    sql = ("select * from stock_list " + (
+        '' if limit is None else 'limit {}'.format(limit)) + ';') if sql is None else sql
     df = pd.read_sql_query(sql, get_engine())
     if not len(df):
         print('error sql:')
     return df
 
+def get_analyse_collection():
+    sql = """select
+      l.ts_code,l.list_status,l.list_date,l.delist_date,
+      b.y,b.m,
+      b.total_share,b.total_liab,b.total_cur_assets,b.total_assets,
+      f.dt_eps,f.eps,f.current_ratio,f.quick_ratio,
+      m.close,
+      d.stk_div,d.cash_div
+from
+      stock_list l,
+      stock_balancesheet b,
+      stock_fina_indicator f,
+      stock_price_monthly m,
+      stock_month_matrix_basic mb,
+      stock_dividend d
+where
+      l.ts_code = b.ts_code and l.list_date <= b.end_date and
+      b.ts_code = f.ts_code and b.y = f.y and b.m = f.m and
+      b.ts_code = m.ts_code and b.y = m.y and  b.m =m.m and
+      b.ts_code = d.ts_code and b.y = d.y and
+      b.ts_code = mb.ts_code and b.y = mb.y and b.m =mb.m and
+			mb.pe is not null and
+		  b.y ={} and
+			b.m ={};"""
+
+    df = pd.read_sql_query(sql, get_engine())
+    if not len(df):
+        print('error sql:')
+    return df
 
 def init_table_indexes():
     sql = "SELECT TABLE_NAME FROM information_schema.TABLES where table_schema = '{}' and table_type = 'BASE TABLE';"
@@ -71,6 +101,37 @@ def init_table_indexes():
             sql = sql_tpl_create_index.format(table_name, column, table_name, column)
             print(sql)
             e.execute(sql)
+
+    print('-' * 32, 'add index')
+    df = df[df.TABLE_NAME != 'trade_date_detail']
+    df = df[df.TABLE_NAME != 'stock_dividend_detail']
+
+    key_list = ['index_code', 'con_code', 'ts_code', 'cal_date', 'y', 'm']
+    prim_keys = set(key_list)
+    sql_prim = "select * from information_schema.TABLE_CONSTRAINTS  where CONSTRAINT_SCHEMA = '{}' and table_name = '{}';"
+    sql_add_prim = 'alter table {}.{} add primary key({});'
+    for table_name in df.iloc[:, 0]:
+        sql = sql_prim.format(SCHEMA, table_name)
+        prim = pd.read_sql_query(sql, get_engine())
+        if len(prim) > 0:
+            continue
+        sql_columns = 'show columns from {};'.format(table_name)
+        df_columns = pd.read_sql_query(sql_columns, get_engine())
+        df_columns = set(df_columns['Field'].values.tolist())
+
+        p = prim_keys & df_columns
+        key_temp = key_list[:]
+        for key in key_list:
+            if not key in p:
+                key_temp.remove(key)
+
+        if key_temp:
+            sql = sql_add_prim.format(SCHEMA, table_name, ','.join(key_temp))
+            print(sql)
+            # print(table_name, key_temp)
+            e.execute(sql)
+
+
 
 
 if __name__ == '__main__':

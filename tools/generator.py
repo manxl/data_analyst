@@ -1,6 +1,6 @@
 import pandas as pd
 import re
-
+import os,sys
 
 def dtype_4_mysql_generator(file_path, sheet_name):
     df = pd.read_excel(file_path, sheet_name)
@@ -93,14 +93,13 @@ def match_names(file_path, dict_sheet, report_sheet):
 
 
 if __name__ == '__main__':
-    file_path = 'C:/Users/xlman.DESKTOP-V8KO3HL/Desktop/tax.xlsx'
+    p = os.path.dirname
+    file_path = os.path.join(p(p(__file__)),'data/define/define.xlsx')
     sheet_name = 'balancesheet'
     sheet_name = 'cashflow'
     sheet_name = 'income'
-    # dtype_4_mysql_generator(file_path, sheet_name)
 
+    # dtype_4_mysql_generator(file_path, sheet_name)
     sheet_name = 'indicator'
-    # dtype_4_fina_generator(file_path, sheet_name)
-    dict_sheet = 'balancesheet'
-    report_sheet = 'iflytek'
-    match_names(file_path, dict_sheet, report_sheet)
+    sheet_name = 'daily_basic'
+    dtype_4_fina_generator(file_path, sheet_name)

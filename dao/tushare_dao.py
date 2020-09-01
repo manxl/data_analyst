@@ -4,6 +4,7 @@ import tushare as ts
 from sqlalchemy.types import VARCHAR, Integer, DATE, DECIMAL, INT, BIGINT, FLOAT
 import conf.config as config
 from dao.db_pool import get_engine
+from dao.db_pool import MySQL
 import dao.db_dao as dao
 import time
 from concurrent.futures import ThreadPoolExecutor
@@ -51,7 +52,9 @@ def need_pull_check(code, table_name, force=None, condition_column='ts_code'):
     if force is None:
         sql = "select count(*) from {} where {} = '{}';".format(table_name, condition_column, code)
         try:
-            size = get_engine().execute(sql).fetchone()[0]
+            # size = get_engine().execute(sql).fetchone()[0]
+            df = pd.read_sql_query(sql, get_engine())
+            size = df.iloc[0, 0]
         except Exception as e:
             if 'f405' == e.code:
                 return True
@@ -69,7 +72,7 @@ def need_pull_check(code, table_name, force=None, condition_column='ts_code'):
             exit(4)
 
         try:
-            r = get_engine().execute(sql)
+            r = pd.read_sql_query(sql, get_engine()).iloc[0, 0]
             print('force clean {} rows 4 {}'.format(r.rowcount, code))
         except Exception as e:
             if 'f405' == e.code or 'e3q8' == e.code:
@@ -448,13 +451,13 @@ def init_cashflow(ts_code, force=None):
 
 
 def init_fina_indicator(ts_code, force=None):
-    table_name = 'stock_fina_indicator'
+    table_name = 'stock_fina_indicator_test'
 
-    if not need_pull_check(ts_code, table_name, force):
-        print('need not 2 pull {} -> {}'.format(table_name, ts_code))
-        return
-    else:
-        print('start 2 pull {} -> {} .'.format(table_name, ts_code))
+    # if not need_pull_check(ts_code, table_name, force):
+    #     print('need not 2 pull {} -> {}'.format(table_name, ts_code))
+    #     return
+    # else:
+    #     print('start 2 pull {} -> {} .'.format(table_name, ts_code))
 
     dtype = {'ts_code': VARCHAR(length=10), 'ann_date': DATE(), 'end_date': DATE(),
              'y': INT(), 'm': INT(),
@@ -516,15 +519,59 @@ def init_fina_indicator(ts_code, force=None):
     columns = 'ts_code,ann_date,end_date,eps,dt_eps,total_revenue_ps,revenue_ps,capital_rese_ps,surplus_rese_ps,undist_profit_ps,extra_item,profit_dedt,gross_margin,current_ratio,quick_ratio,cash_ratio,invturn_days,arturn_days,inv_turn,ar_turn,ca_turn,fa_turn,assets_turn,op_income,valuechange_income,interst_income,daa,ebit,ebitda,fcff,fcfe,current_exint,noncurrent_exint,interestdebt,netdebt,tangible_asset,working_capital,networking_capital,invest_capital,retained_earnings,diluted2_eps,bps,ocfps,retainedps,cfps,ebit_ps,fcff_ps,fcfe_ps,netprofit_margin,grossprofit_margin,cogs_of_sales,expense_of_sales,profit_to_gr,saleexp_to_gr,adminexp_of_gr,finaexp_of_gr,impai_ttm,gc_of_gr,op_of_gr,ebit_of_gr,roe,roe_waa,roe_dt,roa,npta,roic,roe_yearly,roa2_yearly,roe_avg,opincome_of_ebt,investincome_of_ebt,n_op_profit_of_ebt,tax_to_ebt,dtprofit_to_profit,salescash_to_or,ocf_to_or,ocf_to_opincome,capitalized_to_da,debt_to_assets,assets_to_eqt,dp_assets_to_eqt,ca_to_assets,nca_to_assets,tbassets_to_totalassets,int_to_talcap,eqt_to_talcapital,currentdebt_to_debt,longdeb_to_debt,ocf_to_shortdebt,debt_to_eqt,eqt_to_debt,eqt_to_interestdebt,tangibleasset_to_debt,tangasset_to_intdebt,tangibleasset_to_netdebt,ocf_to_debt,ocf_to_interestdebt,ocf_to_netdebt,ebit_to_interest,longdebt_to_workingcapital,ebitda_to_debt,turn_days,roa_yearly,roa_dp,fixed_assets,profit_prefin_exp,non_op_profit,op_to_ebt,nop_to_ebt,ocf_to_profit,cash_to_liqdebt,cash_to_liqdebt_withinterest,op_to_liqdebt,op_to_debt,roic_yearly,total_fa_trun,profit_to_op,q_opincome,q_investincome,q_dtprofit,q_eps,q_netprofit_margin,q_gsprofit_margin,q_exp_to_sales,q_profit_to_gr,q_saleexp_to_gr,q_adminexp_to_gr,q_finaexp_to_gr,q_impair_to_gr_ttm,q_gc_to_gr,q_op_to_gr,q_roe,q_dt_roe,q_npta,q_opincome_to_ebt,q_investincome_to_ebt,q_dtprofit_to_profit,q_salescash_to_or,q_ocf_to_sales,q_ocf_to_or,basic_eps_yoy,dt_eps_yoy,cfps_yoy,op_yoy,ebt_yoy,netprofit_yoy,dt_netprofit_yoy,ocf_yoy,roe_yoy,bps_yoy,assets_yoy,eqt_yoy,tr_yoy,or_yoy,q_gr_yoy,q_gr_qoq,q_sales_yoy,q_sales_qoq,q_op_yoy,q_op_qoq,q_profit_yoy,q_profit_qoq,q_netprofit_yoy,q_netprofit_qoq,equity_yoy,rd_exp,update_flag'
     df = __pro.fina_indicator(ts_code=ts_code, start_date='19901201', end_date='20210101', columns=columns)
 
+    if len(df) == 0:
+        print('=' * 32, 'code:{}'.format(ts_code))
+        print('error exit middle')
+        exit(4)
+
     # clean
     # df = df.drop_duplicates(["end_date"], keep="first")
-    # df = drop_more_nan_row(df, 'end_date')
+    df = drop_more_nan_row(df, 'end_date')
 
     df_add_y_m(df, 'end_date')
 
     df.reset_index(drop=True)
 
+    df_2_db(df, table_name, dtype)
+
+
+def df_2_db(df, table_name, dtype=None, index=False, if_exists='append'):
+    con = get_engine().connect()
+    df.to_sql(table_name, con, dtype=dtype, index=index, if_exists=if_exists)
+    con.close()
+
+
+def init_month_matrix_basic():
+    table_name = 'stock_month_matrix_basic'
+    sql = 'select * from trade_date where m != 0 ;'
+    yms = pd.read_sql_query(sql, get_engine())
+
+    df = None
+    for i, row in yms.iterrows():
+        first_trade_date_str = row['first'].strftime('%Y%m%d')
+        last_last_date_str = row['last'].strftime('%Y%m%d')
+        data = __pro.daily_basic(ts_code='', trade_date=last_last_date_str)
+        print(last_last_date_str)
+        if df is None:
+            df = data
+        else:
+            df = df.append(data)
+    df_add_y_m(df, 'trade_date')
+    df.reset_index(drop=True)
+    df = df.iloc[::-1]
+    dtype = {'ts_code': VARCHAR(length=10), 'trade_date': DATE(), 'close': FLOAT(),
+             'y': INT(), 'm': INT(),
+             'turnover_rate': FLOAT(), 'turnover_rate_f': FLOAT(), 'volume_ratio': FLOAT(),
+             'pe': FLOAT(), 'pe_ttm': FLOAT(), 'pb': FLOAT(),
+             'ps': FLOAT(), 'ps_ttm': FLOAT(), 'dv_ratio': FLOAT(),
+             'dv_ttm': FLOAT(), 'total_share': FLOAT(), 'float_share': FLOAT(),
+             'free_share': FLOAT(), 'total_mv': FLOAT(), 'circ_mv': FLOAT()}
     df.to_sql(table_name, get_engine(), dtype=dtype, index=False, if_exists='append')
+
+
+def init_test():
+    df = __pro.disclosure_date(ts_code='000409.SZ')
+    print(df)
 
 
 if __name__ == '__main__':
@@ -535,3 +582,6 @@ if __name__ == '__main__':
     # init_income(ts_code, force='drop')
     # init_cashflow(ts_code, force='drop')
     # init_fina_indicator(ts_code, force='drop')
+    # init_month_matrix_basic()
+    # init_test()
+    init_fina_indicator(config.TEST_TS_CODE_4)
