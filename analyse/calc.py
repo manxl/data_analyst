@@ -57,12 +57,13 @@ def test_one_repay(ts_code, start_year, period):
     print('earnings_percent:\t', earnings_percent * 100)
 
 
-def base_analyse():
+
+
+def base_analyse(y, m, e_duration, e_evg_years, e_ratio):
     start = time()
 
-    y, m, e_duration, e_evg_years, e_ratio = 2019, 12, 5, 3, 1.07
-    low_percent = 0.99
-    a3 = 0.0425
+    low_percent = 1
+    a3 = dao.get_liability(y)
 
     pe_threshold = dao.get_pe_low(y, m, low_percent)
     start_year = y - e_duration - e_evg_years
@@ -74,7 +75,7 @@ def base_analyse():
         UNDERRATE
     """
     # 1. ep L3A*2
-    mask_UNDERRATE_ep = df['ep'] > a3 * 2
+    mask_UNDERRATE_ep = df['ep'] > a3 *2
     # df = df[mask_ep]
     stat_count_filtration(df, mask_UNDERRATE_ep, 'mask_UNDERRATE_ep')
 
@@ -219,6 +220,5 @@ def check_earning_power(ts_code, y, e_dur, e_evg, m, ratio, data=None):
 
 if __name__ == '__main__':
     # test_one_repay(config.TEST_TS_CODE_1, 2010, 10)
-    base_analyse()
-    # analyse_pe()
-    # check_earning_power('000631.SZ', 2019, 5, 3, 12, 1.07)
+    y, m, e_duration, e_evg_years, e_ratio = 2019, 12, 5, 3, 1.07
+    base_analyse(y, m, e_duration, e_evg_years, e_ratio)

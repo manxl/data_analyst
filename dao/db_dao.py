@@ -4,6 +4,13 @@ from conf.config import SCHEMA
 import numpy as np
 
 
+def get_liability(y):
+    sql = '''select * from liability where y = {}'''
+    sql = sql.format(y)
+    df = pd.read_sql_query(sql, get_engine())
+    return df['radio'][0]
+
+
 def get_stock_price_monthly(ts_code, trade_date):
     sql = "select * from stock_price_monthly where ts_code = '{}' and trade_date = '{}'"
     sql = sql.format(ts_code, trade_date)

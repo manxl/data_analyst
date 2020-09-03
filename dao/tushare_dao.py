@@ -51,6 +51,7 @@ def drop_more_nan_row(df, column_name):
 def need_pull_check(code, table_name, force=None, condition_column='ts_code'):
     if force is None:
         sql = "select count(*) from {} where {} = '{}';".format(table_name, condition_column, code)
+        # con = get_engine().connect()
         try:
             # size = get_engine().execute(sql).fetchone()[0]
             df = pd.read_sql_query(sql, get_engine())
@@ -61,6 +62,9 @@ def need_pull_check(code, table_name, force=None, condition_column='ts_code'):
             else:
                 print(e)
                 exit(4)
+        # finally:
+        #     con.close()
+
         return False if size > 0 else True
     else:
         if 'delete' == force:
@@ -449,13 +453,13 @@ def init_cashflow(ts_code, force=None):
 
 
 def init_fina_indicator(ts_code, force=None):
-    table_name = 'stock_fina_indicator_test'
+    table_name = 'stock_fina_indicator'
 
-    # if not need_pull_check(ts_code, table_name, force):
-    #     print('need not 2 pull {} -> {}'.format(table_name, ts_code))
-    #     return
-    # else:
-    #     print('start 2 pull {} -> {} .'.format(table_name, ts_code))
+    if not need_pull_check(ts_code, table_name, force):
+        print('need not 2 pull {} -> {}'.format(table_name, ts_code))
+        return
+    else:
+        print('start 2 pull {} -> {} .'.format(table_name, ts_code))
 
     dtype = {'ts_code': VARCHAR(length=10), 'ann_date': DATE(), 'end_date': DATE(),
              'y': INT(), 'm': INT(),
