@@ -48,35 +48,79 @@ def get_list_all(limit=None, sql=None):
         print('error sql:')
     return df
 
-def get_analyse_collection():
+
+def get_analyse_collection(y, m, pe_thresthold, year_start):
     sql = """select
+        # l.name,
       l.ts_code,l.list_status,l.list_date,l.delist_date,
       b.y,b.m,
-      b.total_share,b.total_liab,b.total_cur_assets,b.total_assets,
+      b.total_share,b.total_liab,b.total_cur_assets,b.total_assets,b.total_ncl,b.total_hldr_eqy_inc_min_int,
+      
+      b.intan_assets,b.r_and_d,b.goodwill,b.lt_amor_exp,b.defer_tax_assets,
+      
       f.dt_eps,f.eps,f.current_ratio,f.quick_ratio,
-      m.close,
+      m.close,m.pe,1/m.pe as ep,m.dv_ratio,m.total_mv,
       d.stk_div,d.cash_div
 from
       stock_list l,
       stock_balancesheet b,
       stock_fina_indicator f,
-      stock_price_monthly m,
-      stock_month_matrix_basic mb,
+      stock_month_matrix_basic m,
       stock_dividend d
 where
-      l.ts_code = b.ts_code and l.list_date <= b.end_date and
-      b.ts_code = f.ts_code and b.y = f.y and b.m = f.m and
-      b.ts_code = m.ts_code and b.y = m.y and  b.m =m.m and
-      b.ts_code = d.ts_code and b.y = d.y and
-      b.ts_code = mb.ts_code and b.y = mb.y and b.m =mb.m and
-			mb.pe is not null and
-		  b.y ={} and
-			b.m ={};"""
-
+      l.ts_code = b.ts_code and l.list_date <= b.end_date and l.list_status = 'L' and 
+      b.ts_code = f.ts_code and b.y = f.y and b.m = f.m and 
+      b.ts_code = d.ts_code and b.y = d.y and 
+      b.ts_code = m.ts_code and b.y = m.y and b.m =m.m and m.pe > 0 and 
+            
+             
+            -- (f.current_ratio > 2 or f.quick_ratio > 1) and 
+            -- b.total_liab < b.total_hldr_eqy_inc_min_int and 
+            -- b.
+            
+		    b.y ={} and
+			b.m ={} and 
+			m.pe <= {}  and
+            l.list_date <= '{}-12-31'
+					
+			;"""
+    sql = sql.format(y, m, pe_thresthold, year_start)
     df = pd.read_sql_query(sql, get_engine())
     if not len(df):
         print('error sql:')
     return df
+
+
+def get_pe_low(y, m, percent):
+    sql = """select *from (
+		select 
+				@row_num:=@row_num+1 as row_num ,
+        a.*
+        
+    from 
+			(select CASE when pe is null then 9999 else pe end as pea  from {}.stock_month_matrix_basic where y = {} and m ={} order by pea asc) a,
+			(select @row_num:=0) b  
+    order by 
+        pea
+) base
+where 
+    base.row_num <= (@row_num*{})
+		order by pea desc limit 1"""
+    sql = sql.format(SCHEMA, y, m, percent)
+    df = pd.read_sql_query(sql, get_engine())
+    return df.iloc[0, 1]
+
+
+def get_fina(ts_code, start, end, m):
+    if ts_code is str:
+        sql = """select * from stock_fina_indicator where ts_code = '{}' and y between {} and {} and m = {} order by y desc"""
+        sql = sql.format(ts_code, start, end, m)
+    else:
+        sql = """select ts_code,end_date,y,m,eps,dt_eps from stock_fina_indicator where ts_code in ({}) and y between {} and {} and m = {}  order by y desc"""
+        sql = sql.format(','.join(["'%s'" % item for item in ts_code]), start, end, m)
+    df = pd.read_sql_query(sql, get_engine())
+    return df
+
 
 def init_table_indexes():
     sql = "SELECT TABLE_NAME FROM information_schema.TABLES where table_schema = '{}' and table_type = 'BASE TABLE';"
@@ -130,8 +174,6 @@ def init_table_indexes():
             print(sql)
             # print(table_name, key_temp)
             e.execute(sql)
-
-
 
 
 if __name__ == '__main__':

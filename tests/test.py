@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 from dao.db_pool import get_engine
 from sqlalchemy.types import VARCHAR, Integer, DATE, DECIMAL, INT, BIGINT, FLOAT, Float, NUMERIC
-import re
+import re, inspect
 
 
 # import conf.config as config
@@ -17,21 +17,31 @@ def drop_more_nan_row(df, column_name):
 def test():
     import pandas as pd
     a = pd.DataFrame({'a': [1, 2, 3], 'b': [2, 3, 4]})
-    b = pd.DataFrame({'c': [11, 22, 33], 'd': [22, 33, 44]})
+    b = pd.DataFrame({'c': [4, 3, 2], 'd': [3, 2, 1]})
     c = pd.concat([a, b], axis=1)
-    print('-' * 32, 'a')
-    print(a)
-    print('-' * 32, 'b')
-    print(b)
-    print('-' * 32, 'c')
+
+    d_1 = c['a'] + c['b'] > c['d']
+    d_2 = c['a'] + c['b'] > c['c'] * 1.6
+    c['c13'] = c['c'] * 1.3
     print(c)
-    d = c.reset_index().rename(columns={'index': 'i'})
-    print(d)
-    d['c'] = 'kknd'
-    print(d)
-    # e = d.sort_index(by=['i'], ascending=False)
-    e = d.sort_values(by=['i'], ascending=False)
-    print(e)
+    print(d_1)
+    print(d_2)
+
+
+def test_mp():
+    a = {'k1': {'a': 2, 'b': 1}, 'k2': {'a': 4, 'b': 3}}
+    for k, v in a.items():
+        print(k)
+        print('\ta:', v['a'])
+        print('\tb:', v['b'])
+        print('\tper:%-3.2f' % (v['a'] / v['b']))
+
+    df = pd.DataFrame({'name': ['Addy', 'Billy', 'Merian']})
+
+    sql = "SELECT * FROM tb_attribute WHERE name in ({}) and is_delete = 0".format(
+        ','.join(["'%s'" % item for item in df.name]))
+
+    print(sql)
 
 
 class Student:
@@ -62,4 +72,6 @@ def match_names(file_path, dict_sheet, like):
 
 
 if __name__ == '__main__':
-    test()
+    # test()
+    # test_func('fa', 'fb')
+    test_mp()

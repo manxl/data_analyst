@@ -242,12 +242,12 @@ def init_dividend(ts_code, force=None):
         return
     else:
         print('start 2 pull {} -> {} .'.format(table_name, ts_code))
-
-    df = __pro.dividend(ts_code=ts_code, fields='ts_code,end_date,div_proc,stk_div,cash_div,ex_date')
+    fields = 'ts_code,end_date,ann_date,div_proc,stk_div,stk_bo_rate,stk_co_rate,cash_div,cash_div_tax,record_date,ex_date,pay_date,div_listdate,imp_ann_date,base_date,base_share'
+    df = __pro.dividend(ts_code=ts_code, fields=fields)
     df = df[df['div_proc'].str.contains('实施')]
     df_add_y(df, 'end_date')
     df.reset_index(drop=True)
-    df = df.reindex(columns='ts_code,end_date,y,ex_date,div_proc,stk_div,cash_div'.split(','))
+
     dtype = {'ts_code': VARCHAR(length=10), 'end_date': DATE(), 'div_proc': VARCHAR(length=10),
              'stk_div': DECIMAL(precision=10, scale=8), 'cash_div': DECIMAL(precision=12, scale=8),
              'ex_date': DATE(), 'y': INT()}
@@ -287,8 +287,6 @@ def init_balancesheet(ts_code, force=None):
         return
     else:
         print('start 2 pull {} -> {} .'.format(table_name, ts_code))
-
-    # df = pro.income(ts_code='600000.SH', start_date='20180101', end_date='20180730', fields='ts_code,ann_date,f_ann_date,end_date,report_type,comp_type,basic_eps,diluted_eps')
 
     dtype = {'ts_code': VARCHAR(length=10), 'ann_date': DATE(), 'f_ann_date': DATE(),
              'y': INT(), 'm': INT(),

@@ -58,8 +58,8 @@ def init_target_stock_base(ts_code, force=None):
 
 def init_single_target():
     sql = """select DISTINCT(ts_code)  as ts_code from stock_balancesheet b where 
-                ts_code not in (select DISTINCT(ts_code) from stock_fina_indicator_test f)"""
-    init_stock_all(sql=sql, handler=ts_dao.init_fina_indicator)
+                ts_code not in (select DISTINCT(ts_code) from stock_dividend_detail f)"""
+    init_stock_all(sql=sql, handler=ts_dao.init_dividend)
 
 if __name__ == '__main__':
     # ts_code = '000022.SZ'
@@ -68,7 +68,8 @@ if __name__ == '__main__':
     # init_matrix_index_needs(config.TEST_INDEX_CODE_1)
     # init_base()
 
-
+    init_stock_all()
     # ts_dao.init_dividend(config.TEST_TS_CODE_3, force='drop')
 
+    # init_single_target()
     pass
