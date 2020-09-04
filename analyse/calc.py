@@ -57,100 +57,107 @@ def test_one_repay(ts_code, start_year, period):
     print('earnings_percent:\t', earnings_percent * 100)
 
 
+class Analyser:
+    def __init__(self, y, m, earning_duration=None, earning_mean_year=None, earning_inc_ratio=None):
+        self.__y = y
+        self.__m = m
+        self.__earning_duration = 5 if earning_duration is None else earning_duration
+        self.__earning_mean_year = 3 if earning_mean_year is None else earning_mean_year
+        self.__earning_inc_ratio = 1.07 if earning_inc_ratio is None else earning_inc_ratio
 
+        # 1. ep L3A*2
+        self.underrate_ep_2_3A_multi = 2
+        # 2. dividend > L3A 2/3
+        self.underrate_divident_2_3A = 2 / 3
+        # 3. pe in lowest 10%
+        self.low_percent = 1
+        # 4. price < touch assert 2/3
+        self.underrate_price_2_touch_assert = 2 / 3
+        # 5. price < total_cur_assets VALUE 2/3
+        self.underrate_price_2_cur_ass_val = 2 / 3
 
-def base_analyse(y, m, e_duration, e_evg_years, e_ratio):
-    start = time()
+        self.__stat = {'underrate': {}, 'financial': {}, 'earning': {}}
 
-    low_percent = 1
-    a3 = dao.get_liability(y)
+        self.__result = None
 
-    pe_threshold = dao.get_pe_low(y, m, low_percent)
-    start_year = y - e_duration - e_evg_years
-    df = dao.get_analyse_collection(y, m, pe_threshold, start_year)
+    def process(self):
+        self.__base_analyse()
+        self.__show()
 
-    print('=' * 32, 'load cost:', time() - start)
-    start = time()
-    """
-        UNDERRATE
-    """
-    # 1. ep L3A*2
-    mask_UNDERRATE_ep = df['ep'] > a3 *2
-    # df = df[mask_ep]
-    stat_count_filtration(df, mask_UNDERRATE_ep, 'mask_UNDERRATE_ep')
+    def __base_analyse(self):
+        start = time()
 
-    # 2. dividend > L3A 2/3
-    mask_UNDERRATE_divident = df['dv_ratio'] > a3 / 3 * 2
-    stat_count_filtration(df, mask_UNDERRATE_divident, 'mask_UNDERRATE_divident')
+        a3 = dao.get_liability(self.__y)
 
-    # 3. pe in lowest 10%
-    # add above
+        pe_threshold = dao.get_pe_low(self.__y, self.__m, self.low_percent)
+        start_year = self.__y - self.__earning_duration - self.__earning_mean_year
 
-    # 4. price < youxiangzichanczhamgmianjiazhi 2/3
-    # total_assets - (intan_assets  r_and_d goodwill lt_amor_exp defer_tax_assets)
-    price_UNDERRATE_real_mask = (df['total_mv'] * 1.5) < df['total_assets'] - df['intan_assets'] - df['r_and_d'] - df[
-        'goodwill'] - df['lt_amor_exp'] - df['defer_tax_assets']
-    stat_count_filtration(df, price_UNDERRATE_real_mask, 'price_UNDERRATE_real_mask')
+        df = dao.get_analyse_collection(self.__y, self.__m, pe_threshold, start_year)
 
-    # 5. price < total_cur_assets VALUE 2/3
-    ####   edit
-    mask_UNDERRATE_cur_ass_val = df['total_mv'] * 3 / 2 < df['total_cur_assets'] - df['total_liab']
-    stat_count_filtration(df, mask_UNDERRATE_cur_ass_val, 'mask_UNDERRATE_cur_ass_val')
+        print('=' * 32, 'load cost:', time() - start)
+        start = time()
+        """
+            UNDERRATE
+        """
 
-    """
-        FINANCIAL
-    """
-    # 1, current_ratio > 2 |  quick_ratio  > 1
-    mask_FINANCIAL_ratio = (df['current_ratio'] > 2) | (df['quick_ratio'] > 1)
-    stat_count_filtration(df, mask_FINANCIAL_ratio, 'mask_FINANCIAL_ratio')
+        # 1. ep L3A*2
+        self.__stat['underrate']['ep_2_3A'] = df['ep'] > a3 * self.underrate_ep_2_3A_multi
+        # 2. dividend > L3A 2/3
+        self.__stat['underrate']['dividend_2_3A'] = df['dv_ratio'] > a3 * self.underrate_divident_2_3A
 
-    # 2. debt-to-equity < 1
-    mask_FINANCIAL_liability = df['total_liab'] < df['total_hldr_eqy_inc_min_int']
-    # df = df[df['total_ncl'] < df['total_hldr_eqy_inc_min_int']]
-    stat_count_filtration(df, mask_FINANCIAL_liability, 'mask_FINANCIAL_liability')
+        # 3. pe in lowest 10%
+        # add above
 
-    # Current Assets VAL > debt 1/2
-    mask_FINANCIAL_asset_VAL = df['total_cur_assets'] - df['total_liab'] > df['total_liab'] / 2
-    stat_count_filtration(df, mask_FINANCIAL_asset_VAL, 'mask_FINANCIAL_asset_VAL')
-    """
-    EARNING POWER
-    """
-    # 1. 10 year earning rate 7%
-    # 2. 10 year earning rate de decrease more than 5% below 2year
-    print('=' * 32, 'analyse cost:', time() - start)
-    start = time()
-    detail_list = dao.get_fina(df.ts_code, y - e_duration - e_evg_years, y, m)
-    print('=' * 32, 'load cost:', time() - start)
-    start = time()
-    earning_power_mask = df['ts_code'].apply(
-        lambda x: check_earning_power(x, y, e_duration, e_evg_years, m, e_ratio, data=detail_list))
-    # df = df[earning_power_mask]
-    stat_count_filtration(df, earning_power_mask, 'earning_power_mask')
+        # 4. price < touch assert 2/3
+        self.__stat['underrate']['price_touch_assert'] = (df['total_mv'] / self.underrate_price_2_touch_assert) < df['total_assets'] - df[
+            'intan_assets'] - df['r_and_d'] - df['goodwill'] - df['lt_amor_exp'] - df['defer_tax_assets']
 
-    print('=' * 32, 'analyse cost:', time() - start)
-    start = time()
+        # 5. price < total_cur_assets VALUE 2/3
+        self.__stat['underrate']['price_2_cur_asset_val'] = df['total_mv'] / self.underrate_price_2_cur_ass_val < df['total_cur_assets'] - df[
+            'total_liab']
 
-    # print('=' * 32, 'RESULT LENGTH:', len(df))
-    # print('=' * 32, 'RESULT DATA:', df)
+        """
+            FINANCIAL
+        """
+        # 1, current_ratio > 2 |  quick_ratio  > 1
+        self.__stat['financial']['cur_quick_ratio'] = (df['current_ratio'] > 2) | (df['quick_ratio'] > 1)
 
-    show()
+        # 2. debt-to-equity < 1
+        self.__stat['financial']['debt-to-equity'] = df['total_liab'] < df['total_hldr_eqy_inc_min_int']
 
+        # Current Assets VAL > debt 1/2
+        self.__stat['financial']['cur_asset_val_2_debt'] = df['total_cur_assets'] - df['total_liab'] > df['total_liab'] / 2
 
-def show():
-    for k, v in stat.items():
-        print(k)
-        print('\ttotle:', v['totle'])
-        print('\tfiltration:', v['filtration'])
-        print('\tper:', v['filtration'] / v['totle'])
+        """
+        EARNING
+        """
+        # 1. 10 year earning rate 7%
+        # 2. 10 year earning rate de decrease more than 5% below 2year
+        print('=' * 32, 'analyse cost:', time() - start)
+        start = time()
 
+        detail_list = dao.get_fina(df.ts_code, self.__y - self.__earning_duration - self.__earning_mean_year, self.__y, self.__m)
+        print('=' * 32, 'load cost:', time() - start)
+        start = time()
+        self.__stat['earning']['increase_decrease'] = df['ts_code'].apply(
+            lambda x: check_earning_power(x, self.__y, self.__earning_duration, self.__earning_mean_year, self.__m, self.__earning_inc_ratio,
+                                          data=detail_list))
 
-stat = {}
+        print('=' * 32, 'analyse cost:', time() - start)
+        # start = time()
 
+    def __show(self):
+        for tab, tab_masks in self.__stat.items():
+            print('=' * 32, tab)
+            for k, mask in tab_masks.items():
+                total = len(mask)
+                true = mask.sum()
+                ratio = true / total
+                print('=' * 16, k)
 
-def stat_count_filtration(df, mask, name):
-    if name not in stat:
-        stat[name] = {'totle': len(mask), 'filtration': mask.sum()}
-    # df = df[mask]
+                print('\t\t\ttotal:', total)
+                print('\t\t\ttrue:', true)
+                print('\t\t\tratio:', ratio)
 
 
 def analyse_pe():
@@ -176,14 +183,14 @@ def analyse_pe():
     mp.show()
 
 
-def check_earning_power(ts_code, y, e_dur, e_evg, m, ratio, data=None):
+def check_earning_power(ts_code, y, earning_duration, earning_mean_year, m, ratio, data=None):
     # print('=' * 32, 'checking', ts_code)
     if data is None:
-        df = dao.get_fina(ts_code, y - e_dur - e_evg, y, m)
+        df = dao.get_fina(ts_code, y - earning_duration - earning_mean_year, y, m)
     else:
         df = data[data['ts_code'] == ts_code]
 
-    if not len(df) or len(df) < e_dur + e_evg:
+    if not len(df) or len(df) < earning_duration + earning_mean_year:
         return False
 
     try:
@@ -194,8 +201,8 @@ def check_earning_power(ts_code, y, e_dur, e_evg, m, ratio, data=None):
     if a.sum() < len(a):
         return False
 
-    e_n = df[:3]['eps'].mean()
-    e_f = df[:-4:-1]['eps'].mean()
+    e_n = df[:earning_mean_year]['eps'].mean()
+    e_f = df[:-1-earning_mean_year:-1]['eps'].mean()
     r = e_n / e_f
     if r < ratio:
         # print('check earning power exit by ratio - > ts_code:', ts_code)
@@ -204,8 +211,8 @@ def check_earning_power(ts_code, y, e_dur, e_evg, m, ratio, data=None):
         # print(e_f)
         return False
 
-    a_a = df[:e_dur]
-    a_b = df[1:e_dur + 1]
+    a_a = df[:earning_duration]
+    a_b = df[1:earning_duration + 1]
     a_a = a_a.reset_index(drop=True)
     a_b = a_b.reset_index(drop=True)
     a_c = (a_a['eps'] < a_b['eps'] * 0.95)
@@ -220,5 +227,6 @@ def check_earning_power(ts_code, y, e_dur, e_evg, m, ratio, data=None):
 
 if __name__ == '__main__':
     # test_one_repay(config.TEST_TS_CODE_1, 2010, 10)
-    y, m, e_duration, e_evg_years, e_ratio = 2019, 12, 5, 3, 1.07
-    base_analyse(y, m, e_duration, e_evg_years, e_ratio)
+    y, m = 2019, 12
+    a = Analyser(y, m)
+    a.process()

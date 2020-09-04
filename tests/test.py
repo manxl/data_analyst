@@ -29,19 +29,19 @@ def test():
 
 
 def test_mp():
-    a = {'k1': {'a': 2, 'b': 1}, 'k2': {'a': 4, 'b': 3}}
-    for k, v in a.items():
-        print(k)
-        print('\ta:', v['a'])
-        print('\tb:', v['b'])
-        print('\tper:%-3.2f' % (v['a'] / v['b']))
+    # x = 10 ** 10 * 2 / 3
+    # print(format(x, '0.6f'))
+    # print(format(0.5, '0.6f'))
 
-    df = pd.DataFrame({'name': ['Addy', 'Billy', 'Merian']})
+    df = pd.DataFrame({'a': [1, 2, 3], 'b': [2, 3, 4]})
+    a = df['a'].apply(lambda x: lbd(x))
+    print(a)
+    print(a.dtype)
+    print(type(a))
 
-    sql = "SELECT * FROM tb_attribute WHERE name in ({}) and is_delete = 0".format(
-        ','.join(["'%s'" % item for item in df.name]))
 
-    print(sql)
+def lbd(x):
+    return x ** 2, x ** 0.5
 
 
 class Student:

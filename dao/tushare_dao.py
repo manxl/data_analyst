@@ -12,8 +12,6 @@ from concurrent.futures import ThreadPoolExecutor
 __pro = ts.pro_api()
 
 
-# __engine = pool.get_engine()
-
 
 def df_add_y_m(df, column_name):
     loc = np.where(df.columns.values.T == column_name)[0][0]

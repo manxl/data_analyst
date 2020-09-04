@@ -80,11 +80,6 @@ where
       b.ts_code = d.ts_code and b.y = d.y and 
       b.ts_code = m.ts_code and b.y = m.y and b.m =m.m and m.pe > 0 and 
             
-             
-            -- (f.current_ratio > 2 or f.quick_ratio > 1) and 
-            -- b.total_liab < b.total_hldr_eqy_inc_min_int and 
-            -- b.
-            
 		    b.y ={} and
 			b.m ={} and 
 			m.pe <= {}  and
