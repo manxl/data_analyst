@@ -3,6 +3,7 @@ import numpy as np
 from dao.db_pool import get_engine
 from sqlalchemy.types import VARCHAR, Integer, DATE, DECIMAL, INT, BIGINT, FLOAT, Float, NUMERIC
 import re, inspect
+from decimal import *
 
 
 # import conf.config as config
@@ -20,24 +21,26 @@ def test():
     b = pd.DataFrame({'c': [4, 3, 2], 'd': [3, 2, 1]})
     c = pd.concat([a, b], axis=1)
 
-    d_1 = c['a'] + c['b'] > c['d']
-    d_2 = c['a'] + c['b'] > c['c'] * 1.6
-    c['c13'] = c['c'] * 1.3
-    print(c)
-    print(d_1)
-    print(d_2)
+    m1 = a['a'] % 2 != 0
+    m2 = a['b'] > 2
+    m3 = a['a'] == 3
+    lst = [m1, m2, m3]
+    r = None
+    for i in range(0, len(lst)):
+        if r is None:
+            r = lst[i]
+        else:
+            r = r & lst[i]
+        print(lst[i])
+
+    a = a[r]
+    print(a)
 
 
 def test_mp():
-    # x = 10 ** 10 * 2 / 3
-    # print(format(x, '0.6f'))
-    # print(format(0.5, '0.6f'))
-
-    df = pd.DataFrame({'a': [1, 2, 3], 'b': [2, 3, 4]})
-    a = df['a'].apply(lambda x: lbd(x))
-    print(a)
-    print(a.dtype)
-    print(type(a))
+    m = {'a': 1, 'b': 2, 'c': 3}
+    df = pd.DataFrame(m, index=pd.Series(2019))
+    print(df)
 
 
 def lbd(x):
@@ -72,6 +75,6 @@ def match_names(file_path, dict_sheet, like):
 
 
 if __name__ == '__main__':
-    # test()
+    test()
     # test_func('fa', 'fb')
-    test_mp()
+    # test_mp()

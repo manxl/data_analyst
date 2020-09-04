@@ -93,6 +93,27 @@ where
     return df
 
 
+def get_standard(y, m):
+    sql = 'select * from standard where y = {} and m = {};'
+    sql = sql.format(y, m)
+    df = pd.read_sql_query(sql, get_engine())
+    return df
+
+
+def get_standard_stat(y, m):
+    try:
+        sql = 'select * from standard_stat where y = {} and m = {};'
+        sql = sql.format(y, m)
+        df = pd.read_sql_query(sql, get_engine())
+    except Exception as e:
+        if 'f405' == e.code:
+            return None
+        else:
+            print(e)
+            return None
+    return df
+
+
 def get_pe_low(y, m, percent):
     sql = """select *from (
 		select 
@@ -121,6 +142,13 @@ def get_fina(ts_code, start, end, m):
         sql = """select ts_code,end_date,y,m,eps,dt_eps from stock_fina_indicator where ts_code in ({}) and y between {} and {} and m = {}  order by y desc"""
         sql = sql.format(','.join(["'%s'" % item for item in ts_code]), start, end, m)
     df = pd.read_sql_query(sql, get_engine())
+    return df
+
+
+def get_stat():
+    sql = 'select * from standard_stat where y != 2020;'
+    df = pd.read_sql_query(sql, get_engine())
+    df.set_index(['y'])
     return df
 
 

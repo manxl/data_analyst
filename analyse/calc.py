@@ -3,6 +3,7 @@ import dao.db_dao as dao
 import matplotlib.pyplot as mp
 import pandas as pd
 from time import time
+from dao.db_pool import get_engine
 
 
 def test_calc_repay(ts_code, start, end, begin_position=100):
@@ -76,15 +77,30 @@ class Analyser:
         # 5. price < total_cur_assets VALUE 2/3
         self.underrate_price_2_cur_ass_val = 2 / 3
 
-        self.__stat = {'underrate': {}, 'financial': {}, 'earning': {}}
+        self.__stat = {}
 
         self.__result = None
 
-    def process(self):
-        self.__base_analyse()
-        self.__show()
+        self.standard_table_name = 'standard'
+        self.standard_start_table_name = 'standard_stat'
 
-    def __base_analyse(self):
+    def process(self):
+        if self.__load_db():
+            print('{} {} load db matrix ok'.format(self.__y, self.__m))
+            return
+        print('{} {} analyse start'.format(self.__y, self.__m))
+        self.__metadata()
+        self.exec_mask()
+
+    def __load_db(self):
+        stat = dao.get_standard_stat(y, m)
+        if stat is not None and len(stat) > 0:
+            self.__stat = stat
+            self.__result = dao.get_standard(y, m)
+            return 'ok'
+        return None
+
+    def __metadata(self):
         start = time()
 
         a3 = dao.get_liability(self.__y)
@@ -101,32 +117,32 @@ class Analyser:
         """
 
         # 1. ep L3A*2
-        self.__stat['underrate']['ep_2_3A'] = df['ep'] > a3 * self.underrate_ep_2_3A_multi
+        self.__stat['ep_2_3A'] = df['ep'] > a3 * self.underrate_ep_2_3A_multi
         # 2. dividend > L3A 2/3
-        self.__stat['underrate']['dividend_2_3A'] = df['dv_ratio'] > a3 * self.underrate_divident_2_3A
+        self.__stat['dividend_2_3A'] = df['dv_ratio'] > a3 * self.underrate_divident_2_3A
 
         # 3. pe in lowest 10%
         # add above
 
         # 4. price < touch assert 2/3
-        self.__stat['underrate']['price_touch_assert'] = (df['total_mv'] / self.underrate_price_2_touch_assert) < df['total_assets'] - df[
+        self.__stat['price_touch_assert'] = (df['total_mv'] / self.underrate_price_2_touch_assert) < df['total_assets'] - df[
             'intan_assets'] - df['r_and_d'] - df['goodwill'] - df['lt_amor_exp'] - df['defer_tax_assets']
 
         # 5. price < total_cur_assets VALUE 2/3
-        self.__stat['underrate']['price_2_cur_asset_val'] = df['total_mv'] / self.underrate_price_2_cur_ass_val < df['total_cur_assets'] - df[
+        self.__stat['price_2_cur_asset_val'] = df['total_mv'] / self.underrate_price_2_cur_ass_val < df['total_cur_assets'] - df[
             'total_liab']
 
         """
             FINANCIAL
         """
         # 1, current_ratio > 2 |  quick_ratio  > 1
-        self.__stat['financial']['cur_quick_ratio'] = (df['current_ratio'] > 2) | (df['quick_ratio'] > 1)
+        self.__stat['cur_quick_ratio'] = (df['current_ratio'] > 2) | (df['quick_ratio'] > 1)
 
         # 2. debt-to-equity < 1
-        self.__stat['financial']['debt-to-equity'] = df['total_liab'] < df['total_hldr_eqy_inc_min_int']
+        self.__stat['debt-to-equity'] = df['total_liab'] < df['total_hldr_eqy_inc_min_int']
 
         # Current Assets VAL > debt 1/2
-        self.__stat['financial']['cur_asset_val_2_debt'] = df['total_cur_assets'] - df['total_liab'] > df['total_liab'] / 2
+        self.__stat['cur_asset_val_2_debt'] = df['total_cur_assets'] - df['total_liab'] > df['total_liab'] / 2
 
         """
         EARNING
@@ -139,25 +155,42 @@ class Analyser:
         detail_list = dao.get_fina(df.ts_code, self.__y - self.__earning_duration - self.__earning_mean_year, self.__y, self.__m)
         print('=' * 32, 'load cost:', time() - start)
         start = time()
-        self.__stat['earning']['increase_decrease'] = df['ts_code'].apply(
+        self.__stat['earning_power'] = df['ts_code'].apply(
             lambda x: check_earning_power(x, self.__y, self.__earning_duration, self.__earning_mean_year, self.__m, self.__earning_inc_ratio,
                                           data=detail_list))
 
         print('=' * 32, 'analyse cost:', time() - start)
         # start = time()
 
-    def __show(self):
-        for tab, tab_masks in self.__stat.items():
-            print('=' * 32, tab)
-            for k, mask in tab_masks.items():
-                total = len(mask)
-                true = mask.sum()
-                ratio = true / total
-                print('=' * 16, k)
+        self.__result = df
 
-                print('\t\t\ttotal:', total)
-                print('\t\t\ttrue:', true)
-                print('\t\t\tratio:', ratio)
+    def exec_mask(self):
+        df = self.__result
+        # total count
+        total = len(df)
+        r = None
+        for k, mask in self.__stat.items():
+            self.__stat[k] = mask.sum() / len(mask)
+            if r is None:
+                r = mask
+            else:
+                r = r & mask
+
+        df = df[r]
+
+        self.__stat['total'] = total
+        self.__stat['all'] = len(df)
+        self.__stat['all_ratio'] = len(df) / total
+
+        df_stat = pd.DataFrame(self.__stat, index=pd.Series([y]))
+        df_stat.insert(0, 'm', m)
+        df_stat.insert(0, 'y', y)
+
+        df.to_sql(self.standard_table_name, get_engine(), index=False, if_exists='append')
+        df_stat.to_sql(self.standard_start_table_name, get_engine(), index=False, if_exists='append')
+
+        self.__stat = df_stat
+        self.__result = df
 
 
 def analyse_pe():
@@ -202,7 +235,7 @@ def check_earning_power(ts_code, y, earning_duration, earning_mean_year, m, rati
         return False
 
     e_n = df[:earning_mean_year]['eps'].mean()
-    e_f = df[:-1-earning_mean_year:-1]['eps'].mean()
+    e_f = df[:-1 - earning_mean_year:-1]['eps'].mean()
     r = e_n / e_f
     if r < ratio:
         # print('check earning power exit by ratio - > ts_code:', ts_code)
@@ -225,8 +258,26 @@ def check_earning_power(ts_code, y, earning_duration, earning_mean_year, m, rati
     return True
 
 
+def analys_array():
+    start = 2000
+    for i in range(0, 21):
+        y = start + i
+        if y == 2020:
+            m = 6
+        a = Analyser(y, m)
+        a.process()
+
+
+def show():
+    df = dao.get_stat()
+    filters = ['all', 'all_ratio', 'total', 'y', 'm']
+    for key in df.columns.values:
+        if key not in filters:
+            mp.plot(df[key], label=key)
+
+    mp.legend()
+    mp.show()
+
+
 if __name__ == '__main__':
-    # test_one_repay(config.TEST_TS_CODE_1, 2010, 10)
-    y, m = 2019, 12
-    a = Analyser(y, m)
-    a.process()
+    show()
