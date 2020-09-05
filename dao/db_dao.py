@@ -55,6 +55,11 @@ def get_list_all(limit=None, sql=None):
         print('error sql:')
     return df
 
+def before_2_clean():
+
+    get_engine().execute('drop table standard;')
+    get_engine().execute('drop table standard_stat;')
+
 
 def get_analyse_collection(y, m, pe_thresthold, year_start):
     sql = """select
@@ -63,9 +68,9 @@ def get_analyse_collection(y, m, pe_thresthold, year_start):
       b.y,b.m,
       b.total_share,b.total_liab,b.total_cur_assets,b.total_assets,b.total_ncl,b.total_hldr_eqy_inc_min_int,
       
-      b.intan_assets,b.r_and_d,b.goodwill,b.lt_amor_exp,b.defer_tax_assets,
+      b.intan_assets,b.r_and_d,b.goodwill,b.lt_amor_exp,b.defer_tax_assets,b.total_hldr_eqy_exc_min_int ,
       
-      f.dt_eps,f.eps,f.current_ratio,f.quick_ratio,
+      f.dt_eps,f.eps,f.current_ratio,f.quick_ratio,f.tangible_asset,
       m.close,m.pe,1/m.pe as ep,m.dv_ratio,m.total_mv,
       d.stk_div,d.cash_div
 from
@@ -79,7 +84,7 @@ where
       b.ts_code = f.ts_code and b.y = f.y and b.m = f.m and 
       b.ts_code = d.ts_code and b.y = d.y and 
       b.ts_code = m.ts_code and b.y = m.y and b.m =m.m and m.pe > 0 and 
-            
+            # b.total_hldr_eqy_inc_min_int is not null and 
 		    b.y ={} and
 			b.m ={} and 
 			m.pe <= {}  and

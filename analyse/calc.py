@@ -129,13 +129,15 @@ class Analyser:
         # 3. pe in lowest 10%
         # add above
 
-        # 4. price < touch assert 2/3
-        self.stat['price_touch_assert'] = (df['total_mv'] * 10000 / self.underrate_price_2_touch_assert) < df['total_assets'] - df[
-            'intan_assets'] - df['r_and_d'] - df['goodwill']
+        # 4. price < tangible_asset 2/3
+        # self.stat['price_touch_assert'] = (df['total_mv'] * 10000 / self.underrate_price_2_touch_assert) < df['total_assets'] - df['intan_assets'] - df['r_and_d'] - df['goodwill']
         # 'intan_assets'] - df['r_and_d'] - df['goodwill'] - df['lt_amor_exp'] - df['defer_tax_assets']
 
+        self.stat['price_touch_assert_exc_1'] = (df['total_mv'] * 10000 ) /2/3 < df['tangible_asset']
+        # self.stat['price_touch_assert_exc_066'] = (df['total_mv'] * 10000 / 0.666 ) < df['total_hldr_eqy_exc_min_int']
+
         # 5. price < total_cur_assets VALUE 2/3
-        self.stat['price_2_cur_asset_val'] = df['total_mv'] * 10000 / self.underrate_price_2_cur_ass_val < df['total_cur_assets'] - df['total_liab']
+        # self.stat['price_2_cur_asset_val'] = df['total_mv'] * 10000 / self.underrate_price_2_cur_ass_val < df['total_cur_assets'] - df['total_liab']
 
         """
             FINANCIAL
@@ -144,7 +146,8 @@ class Analyser:
         self.stat['cur_quick_ratio'] = (df['current_ratio'] > 2) | (df['quick_ratio'] > 1)
 
         # 2. debt-to-equity < 1
-        self.stat['debt-to-equity'] = df['total_liab'] < df['total_hldr_eqy_inc_min_int']
+        # self.stat['debt-to-equity_exc'] = df['total_liab'] < df['total_hldr_eqy_exc_min_int']
+        self.stat['debt-to-equity_inc'] = df['total_liab'] < df['total_hldr_eqy_inc_min_int']
 
         # Current Assets VAL > debt 1/2
         self.stat['cur_asset_val_2_debt'] = df['total_cur_assets'] - df['total_liab'] > df['total_liab'] / 2
@@ -175,12 +178,12 @@ class Analyser:
         total = len(df)
         r = None
         for k, mask in self.stat.items():
-            self.stat[k] = mask.sum() / len(mask)
+            self.stat[k] = mask.sum() / total
             if r is None:
                 r = mask
             else:
                 r = r & mask
-
+            print('{}\t:{}'.format(k,r.sum()))
         df = df[r]
 
         self.stat['total'] = total
@@ -264,7 +267,7 @@ def check_earning_power(ts_code, y, earning_duration, earning_mean_year, m, rati
 
 
 def analys_array():
-    start ,m = 2000 ,12
+    start, m = 2000, 12
     for i in range(0, 21):
         y = start + i
         if y == 2020:
@@ -285,5 +288,6 @@ def show():
 
 
 if __name__ == '__main__':
+    dao.before_2_clean()
     analys_array()
     # show()
