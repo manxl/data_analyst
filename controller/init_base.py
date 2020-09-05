@@ -68,8 +68,10 @@ if __name__ == '__main__':
     # init_matrix_index_needs(config.TEST_INDEX_CODE_1)
     # init_base()
 
-    init_stock_all()
+    # init_stock_all()
     # ts_dao.init_dividend(config.TEST_TS_CODE_3, force='drop')
 
     # init_single_target()
     pass
+
+

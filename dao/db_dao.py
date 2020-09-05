@@ -8,7 +8,7 @@ def get_liability(y):
     sql = '''select * from liability where y = {}'''
     sql = sql.format(y)
     df = pd.read_sql_query(sql, get_engine())
-    return df['radio'][0]
+    return df['ratio'][0]
 
 
 def get_stock_price_monthly(ts_code, trade_date):
@@ -148,7 +148,7 @@ def get_fina(ts_code, start, end, m):
 def get_stat():
     sql = 'select * from standard_stat where y != 2020;'
     df = pd.read_sql_query(sql, get_engine())
-    df.set_index(['y'])
+    df = df.set_index(['y'])
     return df
 
 

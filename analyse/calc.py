@@ -1,9 +1,12 @@
 import conf.config as config
 import dao.db_dao as dao
-import matplotlib.pyplot as mp
 import pandas as pd
 from time import time
 from dao.db_pool import get_engine
+# import matplotlib
+# matplotlib.use('Agg')
+# from matplotlib import pyplot as mp
+import matplotlib.pyplot as mp
 
 
 def test_calc_repay(ts_code, start, end, begin_position=100):
@@ -59,25 +62,27 @@ def test_one_repay(ts_code, start_year, period):
 
 
 class Analyser:
-    def __init__(self, y, m, earning_duration=None, earning_mean_year=None, earning_inc_ratio=None):
+    def __init__(self, y, m, earning_duration=None, earning_mean_year=None, earning_inc_ratio=None, underrate_ep_2_3A_multi=None,
+                 underrate_divident_2_3A=None, low_percent=None, underrate_price_2_touch_assert=None, underrate_price_2_cur_ass_val=None,
+                 ):
         self.__y = y
         self.__m = m
-        self.__earning_duration = 5 if earning_duration is None else earning_duration
-        self.__earning_mean_year = 3 if earning_mean_year is None else earning_mean_year
-        self.__earning_inc_ratio = 1.07 if earning_inc_ratio is None else earning_inc_ratio
+        self.earning_duration = 5 if earning_duration is None else earning_duration
+        self.earning_mean_year = 3 if earning_mean_year is None else earning_mean_year
+        self.earning_inc_ratio = 1.07 if earning_inc_ratio is None else earning_inc_ratio
 
         # 1. ep L3A*2
-        self.underrate_ep_2_3A_multi = 2
+        self.underrate_ep_2_3A_multi = 2 if underrate_ep_2_3A_multi is None else underrate_ep_2_3A_multi
         # 2. dividend > L3A 2/3
-        self.underrate_divident_2_3A = 2 / 3
+        self.underrate_divident_2_3A = 2 / 3 if underrate_divident_2_3A is None else underrate_divident_2_3A
         # 3. pe in lowest 10%
-        self.low_percent = 1
+        self.low_percent = 1 if low_percent is None else low_percent
         # 4. price < touch assert 2/3
-        self.underrate_price_2_touch_assert = 2 / 3
+        self.underrate_price_2_touch_assert = 2 / 3 if underrate_price_2_touch_assert is None else underrate_price_2_touch_assert
         # 5. price < total_cur_assets VALUE 2/3
-        self.underrate_price_2_cur_ass_val = 2 / 3
+        self.underrate_price_2_cur_ass_val = 2 / 3 if underrate_price_2_cur_ass_val is None else underrate_price_2_cur_ass_val
 
-        self.__stat = {}
+        self.stat = {}
 
         self.__result = None
 
@@ -93,10 +98,10 @@ class Analyser:
         self.exec_mask()
 
     def __load_db(self):
-        stat = dao.get_standard_stat(y, m)
+        stat = dao.get_standard_stat(self.__y, self.__m)
         if stat is not None and len(stat) > 0:
-            self.__stat = stat
-            self.__result = dao.get_standard(y, m)
+            self.stat = stat
+            self.__result = dao.get_standard(self.__y, self.__m)
             return 'ok'
         return None
 
@@ -106,7 +111,7 @@ class Analyser:
         a3 = dao.get_liability(self.__y)
 
         pe_threshold = dao.get_pe_low(self.__y, self.__m, self.low_percent)
-        start_year = self.__y - self.__earning_duration - self.__earning_mean_year
+        start_year = self.__y - self.earning_duration - self.earning_mean_year
 
         df = dao.get_analyse_collection(self.__y, self.__m, pe_threshold, start_year)
 
@@ -117,32 +122,32 @@ class Analyser:
         """
 
         # 1. ep L3A*2
-        self.__stat['ep_2_3A'] = df['ep'] > a3 * self.underrate_ep_2_3A_multi
+        self.stat['ep_2_3A'] = df['ep'] * 100 > a3 * self.underrate_ep_2_3A_multi
         # 2. dividend > L3A 2/3
-        self.__stat['dividend_2_3A'] = df['dv_ratio'] > a3 * self.underrate_divident_2_3A
+        self.stat['dividend_2_3A'] = df['dv_ratio'] > a3 * self.underrate_divident_2_3A
 
         # 3. pe in lowest 10%
         # add above
 
         # 4. price < touch assert 2/3
-        self.__stat['price_touch_assert'] = (df['total_mv'] / self.underrate_price_2_touch_assert) < df['total_assets'] - df[
-            'intan_assets'] - df['r_and_d'] - df['goodwill'] - df['lt_amor_exp'] - df['defer_tax_assets']
+        self.stat['price_touch_assert'] = (df['total_mv'] * 10000 / self.underrate_price_2_touch_assert) < df['total_assets'] - df[
+            'intan_assets'] - df['r_and_d'] - df['goodwill']
+        # 'intan_assets'] - df['r_and_d'] - df['goodwill'] - df['lt_amor_exp'] - df['defer_tax_assets']
 
         # 5. price < total_cur_assets VALUE 2/3
-        self.__stat['price_2_cur_asset_val'] = df['total_mv'] / self.underrate_price_2_cur_ass_val < df['total_cur_assets'] - df[
-            'total_liab']
+        self.stat['price_2_cur_asset_val'] = df['total_mv'] * 10000 / self.underrate_price_2_cur_ass_val < df['total_cur_assets'] - df['total_liab']
 
         """
             FINANCIAL
         """
         # 1, current_ratio > 2 |  quick_ratio  > 1
-        self.__stat['cur_quick_ratio'] = (df['current_ratio'] > 2) | (df['quick_ratio'] > 1)
+        self.stat['cur_quick_ratio'] = (df['current_ratio'] > 2) | (df['quick_ratio'] > 1)
 
         # 2. debt-to-equity < 1
-        self.__stat['debt-to-equity'] = df['total_liab'] < df['total_hldr_eqy_inc_min_int']
+        self.stat['debt-to-equity'] = df['total_liab'] < df['total_hldr_eqy_inc_min_int']
 
         # Current Assets VAL > debt 1/2
-        self.__stat['cur_asset_val_2_debt'] = df['total_cur_assets'] - df['total_liab'] > df['total_liab'] / 2
+        self.stat['cur_asset_val_2_debt'] = df['total_cur_assets'] - df['total_liab'] > df['total_liab'] / 2
 
         """
         EARNING
@@ -152,11 +157,11 @@ class Analyser:
         print('=' * 32, 'analyse cost:', time() - start)
         start = time()
 
-        detail_list = dao.get_fina(df.ts_code, self.__y - self.__earning_duration - self.__earning_mean_year, self.__y, self.__m)
+        detail_list = dao.get_fina(df.ts_code, self.__y - self.earning_duration - self.earning_mean_year, self.__y, self.__m)
         print('=' * 32, 'load cost:', time() - start)
         start = time()
-        self.__stat['earning_power'] = df['ts_code'].apply(
-            lambda x: check_earning_power(x, self.__y, self.__earning_duration, self.__earning_mean_year, self.__m, self.__earning_inc_ratio,
+        self.stat['earning_power'] = df['ts_code'].apply(
+            lambda x: check_earning_power(x, self.__y, self.earning_duration, self.earning_mean_year, self.__m, self.earning_inc_ratio,
                                           data=detail_list))
 
         print('=' * 32, 'analyse cost:', time() - start)
@@ -169,8 +174,8 @@ class Analyser:
         # total count
         total = len(df)
         r = None
-        for k, mask in self.__stat.items():
-            self.__stat[k] = mask.sum() / len(mask)
+        for k, mask in self.stat.items():
+            self.stat[k] = mask.sum() / len(mask)
             if r is None:
                 r = mask
             else:
@@ -178,18 +183,18 @@ class Analyser:
 
         df = df[r]
 
-        self.__stat['total'] = total
-        self.__stat['all'] = len(df)
-        self.__stat['all_ratio'] = len(df) / total
+        self.stat['total'] = total
+        self.stat['all'] = len(df)
+        self.stat['all_ratio'] = len(df) / total
 
-        df_stat = pd.DataFrame(self.__stat, index=pd.Series([y]))
-        df_stat.insert(0, 'm', m)
-        df_stat.insert(0, 'y', y)
+        df_stat = pd.DataFrame(self.stat, index=pd.Series([self.__y]))
+        df_stat.insert(0, 'm', self.__m)
+        df_stat.insert(0, 'y', self.__y)
 
         df.to_sql(self.standard_table_name, get_engine(), index=False, if_exists='append')
         df_stat.to_sql(self.standard_start_table_name, get_engine(), index=False, if_exists='append')
 
-        self.__stat = df_stat
+        self.stat = df_stat
         self.__result = df
 
 
@@ -259,7 +264,7 @@ def check_earning_power(ts_code, y, earning_duration, earning_mean_year, m, rati
 
 
 def analys_array():
-    start = 2000
+    start ,m = 2000 ,12
     for i in range(0, 21):
         y = start + i
         if y == 2020:
@@ -280,4 +285,5 @@ def show():
 
 
 if __name__ == '__main__':
-    show()
+    analys_array()
+    # show()
