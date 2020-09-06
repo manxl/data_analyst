@@ -10,9 +10,11 @@ def init_base():
     # init trade_date
     ts_dao.init_trade_date()
     # init index
-    ts_dao.init_stock_index(config.TEST_INDEX_CODE_1)
+    # ts_dao.init_stock_index(config.TEST_INDEX_CODE_1)
     # init index stock reports
-    init_matrix_index_needs(config.TEST_INDEX_CODE_1)
+    # init_matrix_index_needs(config.TEST_INDEX_CODE_1)
+
+    # ts_dao.init_trade_date()
 
 
 def init_matrix_index_needs(index_code):
@@ -62,16 +64,24 @@ def init_single_target():
     init_stock_all(sql=sql, handler=ts_dao.init_dividend)
 
 if __name__ == '__main__':
+    # step 1
+    init_base()
+    # step 2
+    # init_stock_all()
+    # step 3
+    ts_dao.init_month_matrix_basic()
+
     # ts_code = '000022.SZ'
     # ts_code = config.TEST_TS_CODE_2
     # init_target_stock_base('601318.SH')
     # init_matrix_index_needs(config.TEST_INDEX_CODE_1)
-    # init_base()
 
-    # init_stock_all()
     # ts_dao.init_dividend(config.TEST_TS_CODE_3, force='drop')
 
     # init_single_target()
     pass
+
+
+
 
 

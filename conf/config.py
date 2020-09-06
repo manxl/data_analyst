@@ -6,7 +6,7 @@ USER = 'manxl'
 PORT = 3306
 
 # thread config
-MULTIPLE = 1
+MULTIPLE = 10
 
 TEST_TS_CODE_1 = '600036.SH'
 TEST_TS_CODE_2 = '002230.SZ'

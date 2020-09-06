@@ -74,7 +74,38 @@ def match_names(file_path, dict_sheet, like):
             print('{}-{}'.format(desc, name))
 
 
+def i():
+    sql = """select
+    a.*,
+    f.tangible_asset,a.total_assets - a.total_liab  - a.intan_assets
+        -r_and_d-goodwill -lt_amor_exp -defer_tax_assets - oth_nca
+        as tg,
+    a.total_hldr_eqy_inc_min_int  - a.intan_assets as tb,
+    a.total_hldr_eqy_inc_min_int as tc
+from stock_balancesheet a,
+     stock_month_matrix_basic b,
+     stock_fina_indicator f
+where a.ts_code = b.ts_code and a.ts_code = f.ts_code
+  and a.y = b.y and a.y = f.y
+  and a.m = b.m and a.m = f.m
+  and a.ts_code = '601318.SH'
+  and a.y = 2019
+  and a.m = 12;"""
+    sql = """select *
+from stock_income i
+where i.ts_code = '601318.SH' and i.y = 2019 and i.m= 12;"""
+    df = pd.read_sql_query(sql, get_engine())
+    for name in df.columns.values:
+        print("{}\t{}".format(name,df.loc[0][name]))
+
 if __name__ == '__main__':
-    test()
+    # test()
     # test_func('fa', 'fb')
     # test_mp()
+    # i()
+    import tushare as ts
+    __pro = ts.pro_api()
+    # data = __pro.daily_basic(ts_code='601318.SH', trade_date='20191231')
+    data = __pro.income(ts_code='601318.SH', trade_date='income')
+
+    print(data)

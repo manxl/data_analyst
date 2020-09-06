@@ -213,3 +213,4 @@ def init_table_indexes():
 
 if __name__ == '__main__':
     init_table_indexes()
+

@@ -197,7 +197,7 @@ def init_trade_date():
     #     print(a)
     #     print(g)
     r1 = grouped_m['cal_date'].agg([np.min, np.max])
-    r1 = r1.rename(columns={'amin': 'first', '': 'last'})
+    r1 = r1.rename(columns={'amin': 'first', 'amax': 'last'})
     r1['y'] = pd.Series(r1.index.get_level_values('y'), index=r1.index)
     r1['m'] = pd.Series(r1.index.get_level_values('m'), index=r1.index)
 
@@ -582,6 +582,6 @@ if __name__ == '__main__':
     # init_income(ts_code, force='drop')
     # init_cashflow(ts_code, force='drop')
     # init_fina_indicator(ts_code, force='drop')
-    # init_month_matrix_basic()
+    init_month_matrix_basic()
     # init_test()
-    init_fina_indicator(config.TEST_TS_CODE_4)
+    # init_fina_indicator(config.TEST_TS_CODE_4)
