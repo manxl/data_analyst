@@ -3,13 +3,14 @@ import pandas as pd
 import tushare as ts
 from sqlalchemy.types import VARCHAR, Integer, DATE, DECIMAL, INT, BIGINT, FLOAT
 import conf.config as config
-from dao.db_pool import get_engine
+from dao.db_pool import get_engine,pro
 from dao.db_pool import MySQL
 import dao.db_dao as dao
-import time
+import time, calendar
 from concurrent.futures import ThreadPoolExecutor
+import logging
 
-__pro = ts.pro_api()
+
 
 
 
@@ -361,26 +362,26 @@ def init_income(ts_code, force=None):
     dtype = {'ts_code': VARCHAR(length=10), 'ann_date': DATE(), 'f_ann_date': DATE(),
              'y': INT(), 'm': INT(),
              'end_date': DATE(), 'report_type': VARCHAR(length=1), 'comp_type': VARCHAR(length=1),
-             'basic_eps': BIGINT(), 'diluted_eps': BIGINT(), 'total_revenue': BIGINT(),
-             'revenue': BIGINT(), 'int_income': BIGINT(), 'prem_earned': BIGINT(),
-             'comm_income': BIGINT(), 'n_commis_income': BIGINT(), 'n_oth_income': BIGINT(),
-             'n_oth_b_income': BIGINT(), 'prem_income': BIGINT(), 'out_prem': BIGINT(),
-             'une_prem_reser': BIGINT(), 'reins_income': BIGINT(), 'n_sec_tb_income': BIGINT(),
-             'n_sec_uw_income': BIGINT(), 'n_asset_mg_income': BIGINT(), 'oth_b_income': BIGINT(),
-             'fv_value_chg_gain': BIGINT(), 'invest_income': BIGINT(), 'ass_invest_income': BIGINT(),
-             'forex_gain': BIGINT(), 'total_cogs': BIGINT(), 'oper_cost': BIGINT(),
-             'int_exp': BIGINT(), 'comm_exp': BIGINT(), 'biz_tax_surchg': BIGINT(),
-             'sell_exp': BIGINT(), 'admin_exp': BIGINT(), 'fin_exp': BIGINT(),
-             'assets_impair_loss': BIGINT(), 'prem_refund': BIGINT(), 'compens_payout': BIGINT(),
-             'reser_insur_liab': BIGINT(), 'div_payt': BIGINT(), 'reins_exp': BIGINT(),
-             'oper_exp': BIGINT(), 'compens_payout_refu': BIGINT(), 'insur_reser_refu': BIGINT(),
-             'reins_cost_refund': BIGINT(), 'other_bus_cost': BIGINT(), 'operate_profit': BIGINT(),
-             'non_oper_income': BIGINT(), 'non_oper_exp': BIGINT(), 'nca_disploss': BIGINT(),
-             'total_profit': BIGINT(), 'income_tax': BIGINT(), 'n_income': BIGINT(),
-             'n_income_attr_p': BIGINT(), 'minority_gain': BIGINT(), 'oth_compr_income': BIGINT(),
-             't_compr_income': BIGINT(), 'compr_inc_attr_p': BIGINT(), 'compr_inc_attr_m_s': BIGINT(),
-             'ebit': BIGINT(), 'ebitda': BIGINT(), 'insurance_exp': BIGINT(),
-             'undist_profit': BIGINT(), 'distable_profit': BIGINT(), 'update_flag': VARCHAR(length=1)}
+             'basic_eps': FLOAT(), 'diluted_eps': FLOAT(), 'total_revenue': FLOAT(),
+             'revenue': FLOAT(), 'int_income': FLOAT(), 'prem_earned': FLOAT(),
+             'comm_income': FLOAT(), 'n_commis_income': FLOAT(), 'n_oth_income': FLOAT(),
+             'n_oth_b_income': FLOAT(), 'prem_income': FLOAT(), 'out_prem': FLOAT(),
+             'une_prem_reser': FLOAT(), 'reins_income': FLOAT(), 'n_sec_tb_income': FLOAT(),
+             'n_sec_uw_income': FLOAT(), 'n_asset_mg_income': FLOAT(), 'oth_b_income': FLOAT(),
+             'fv_value_chg_gain': FLOAT(), 'invest_income': FLOAT(), 'ass_invest_income': FLOAT(),
+             'forex_gain': FLOAT(), 'total_cogs': FLOAT(), 'oper_cost': FLOAT(),
+             'int_exp': FLOAT(), 'comm_exp': FLOAT(), 'biz_tax_surchg': FLOAT(),
+             'sell_exp': FLOAT(), 'admin_exp': FLOAT(), 'fin_exp': FLOAT(),
+             'assets_impair_loss': FLOAT(), 'prem_refund': FLOAT(), 'compens_payout': FLOAT(),
+             'reser_insur_liab': FLOAT(), 'div_payt': FLOAT(), 'reins_exp': FLOAT(),
+             'oper_exp': FLOAT(), 'compens_payout_refu': FLOAT(), 'insur_reser_refu': FLOAT(),
+             'reins_cost_refund': FLOAT(), 'other_bus_cost': FLOAT(), 'operate_profit': FLOAT(),
+             'non_oper_income': FLOAT(), 'non_oper_exp': FLOAT(), 'nca_disploss': FLOAT(),
+             'total_profit': FLOAT(), 'income_tax': FLOAT(), 'n_income': FLOAT(),
+             'n_income_attr_p': FLOAT(), 'minority_gain': FLOAT(), 'oth_compr_income': FLOAT(),
+             't_compr_income': FLOAT(), 'compr_inc_attr_p': FLOAT(), 'compr_inc_attr_m_s': FLOAT(),
+             'ebit': FLOAT(), 'ebitda': FLOAT(), 'insurance_exp': FLOAT(),
+             'undist_profit': FLOAT(), 'distable_profit': FLOAT(), 'update_flag': VARCHAR(length=1)}
 
     df = __pro.income(ts_code=ts_code, start_date='19901201', end_date='20210101')
     # clean
@@ -532,13 +533,7 @@ def init_fina_indicator(ts_code, force=None):
 
     df.reset_index(drop=True)
 
-    df_2_db(df, table_name, dtype)
-
-
-def df_2_db(df, table_name, dtype=None, index=False, if_exists='append'):
-    con = get_engine().connect()
-    df.to_sql(table_name, con, dtype=dtype, index=index, if_exists=if_exists)
-    con.close()
+    df.to_sql(table_name, get_engine(), dtype=dtype, index=False, if_exists='append')
 
 
 def init_month_matrix_basic():

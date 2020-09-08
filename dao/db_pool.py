@@ -6,18 +6,22 @@ import yaml, os, re, pymysql, time, xlwt, sys, hashlib, sqlalchemy
 from time import sleep, time
 from sqlalchemy import create_engine
 import conf.config as config
+import tushare as ts
 
 engine = None
-
+pro = ts.pro_api()
 
 def get_engine():
     global engine
     if engine:
         return engine
-    engine = create_engine("mysql+pymysql://{}:{}@{}:{}/{}?charset=utf8".format(
-        config.USER, config.PASSWORD, config.HOST, config.PORT, config.SCHEMA))
+    engine = create_engine(get_db_conn_str())
     print('=' * 64, 'engine inited')
     return engine
+
+
+def get_db_conn_str():
+    return "mysql+pymysql://{}:{}@{}:{}/{}?charset=utf8".format(config.USER, config.PASSWORD, config.HOST, config.PORT, config.SCHEMA)
 
 
 class MySQL:

@@ -1,3 +1,5 @@
+
+
 # DB config
 SCHEMA = 'analyst'
 HOST = '127.0.0.1'
@@ -14,3 +16,15 @@ TEST_TS_CODE_3 = '601318.SH'
 TEST_TS_CODE_4 = '300437.SZ'
 
 TEST_INDEX_CODE_1 = '399300.SZ'
+
+YEAR_START = 1990
+YEAR_END = 2020
+
+
+
+
+
+
+
+
+
