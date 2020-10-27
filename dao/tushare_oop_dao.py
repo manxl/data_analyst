@@ -1,16 +1,12 @@
 import numpy as np
 from numpy import dtype
 import pandas as pd
-from sqlalchemy.types import VARCHAR, DATE, INT, Float
+from sqlalchemy.types import VARCHAR, DATE, INT, Float, DECIMAL
 import conf.config as config
-from dao.db_pool import get_engine, pro
+from dao.db_pool import *
 import time, calendar
 import abc, logging
 from concurrent.futures import ThreadPoolExecutor
-
-LOG_FROMAT = "%(asctime)s\t%(filename)s\t[line:%(lineno)d]\t%(levelname)s\t%(message)s"
-DATE_FORMAT = "%Y-%m-%d %H:%M:%S %p"
-logging.basicConfig(level=logging.DEBUG, format=LOG_FROMAT, datefmt=DATE_FORMAT, filemode='w')
 
 
 class BaseDao(metaclass=abc.ABCMeta):
@@ -123,6 +119,11 @@ class CodeDao(BaseDao):
         self._key = value
 
     def _clean(self):
+        #
+        # # check if need clean
+        # if 'update_flag' not in self._df.columns:
+        #     return
+
         grouped = self._df.groupby(self._unique_column)
         mask = []
         for k in grouped.groups:
@@ -139,7 +140,7 @@ class CodeDao(BaseDao):
         self._df = self._df.loc[mask]
 
     def _pull(self):
-        self._df = pro.query(self._interface, ts_code=self.ts_code, fields=self._fields)
+        self._df = get_pro().query(self._interface, ts_code=self.ts_code, fields=self._fields)
 
     def _flush(self):
         # clean
@@ -153,8 +154,12 @@ class CodeDao(BaseDao):
         self._df.to_sql(self._interface, get_engine(), dtype=self._dtype, index=False, if_exists='append')
 
     def process(self):
+
         if not self._need_pull():
-            return
+            logging.debug('start need .')
+            return 'not need'
+        logging.debug('start process.')
+
         self._pull()
 
         self._flush()
@@ -162,6 +167,8 @@ class CodeDao(BaseDao):
         self._store_db()
 
         self._second_process()
+
+        return 'ok'
 
     def _second_process(self):
         pass
@@ -253,6 +260,7 @@ class Income(CodeDao):
         self._dtype = __class__.DTYPE
         self._fields = ','.join(__class__.DTYPE).replace('y,m,', '')
 
+
 class CashFlow(CodeDao):
     DTYPE = {'ts_code': VARCHAR(length=10), 'ann_date': DATE(), 'f_ann_date': DATE(), 'y': INT(), 'm': INT(), 'end_date': DATE(),
              'comp_type': VARCHAR(length=1), 'report_type': VARCHAR(length=1), 'net_profit': Float(precision=53),
@@ -296,6 +304,7 @@ class CashFlow(CodeDao):
         self._interface = 'cashflow'
         self._dtype = __class__.DTYPE
         self._fields = ','.join(__class__.DTYPE).replace('y,m,', '')
+
 
 class FinaIndicator(CodeDao):
     DTYPE = {'ts_code': VARCHAR(length=10), 'ann_date': DATE(), 'end_date': DATE(), 'y': INT(), 'm': INT(), 'eps': Float(precision=53),
@@ -362,9 +371,67 @@ class FinaIndicator(CodeDao):
         self._dtype = __class__.DTYPE
         self._fields = ','.join(__class__.DTYPE).replace('y,m,', '')
 
-if __name__ == '__main__':
+
+class Dividend(CodeDao):
+    DTYPE = {'ts_code': VARCHAR(length=10), 'end_date': DATE(), 'y': INT(), 'm': INT(), 'ann_date': DATE(), 'div_proc': VARCHAR(length=10),
+             'stk_div': Float(precision=53), 'stk_bo_rate': Float(precision=53), 'stk_co_rate': Float(precision=53), 'cash_div': Float(precision=53),
+             'cash_div_tax': Float(precision=53), 'record_date': DATE(), 'ex_date': DATE(), 'pay_date': DATE(), 'div_listdate': VARCHAR(length=10),
+             'imp_ann_date': DATE(), 'base_date': DATE(), 'base_share': Float(precision=53)}
+
+    def __init__(self, ts_code):
+        super().__init__(ts_code)
+        self._interface = 'dividend'
+        self._dtype = __class__.DTYPE
+        self._fields = ','.join(__class__.DTYPE).replace('y,m,', '')
+
+    def _clean(self):
+        self._df = self._df[self._df['div_proc'].str.contains('实施')]
+
+    def _add_y_m(self):
+        self._add_y()
+
+    def _second_process(self):
+        table_name = self._interface + '_stat'
+
+        df = self._df
+
+        grouped = df.groupby('y')
+        r = grouped[['stk_div', 'cash_div']].agg([np.sum])
+        r = r.reset_index()
+        r = r.rename(columns={('stk_div', 'sum'): 'stk_div', ('cash_div', 'sum'): 'cash_div', ('y'): 'y'})
+        r = r.sort_values(by=['y'], ascending=False)
+
+        data = {'ts_code': np.full((len(r)), ts_code), 'y': r['y'], 'stk_div': r[('stk_div', 'sum')],
+                'cash_div': r[('cash_div', 'sum')]}
+        df = pd.DataFrame(data)
+        dtype = {'ts_code': VARCHAR(length=10), 'end_date': DATE(), 'y': INT(),
+                 'stk_div': DECIMAL(precision=10, scale=8), 'cash_div': DECIMAL(precision=12, scale=8)}
+
+        df.to_sql(table_name, get_engine(), dtype=dtype, index=False, if_exists='append')
+
+
+def multi():
     ts_code = config.TEST_TS_CODE_3
-    Balancesheet(ts_code).process()
-    # Income(ts_code).process()
-    # CashFlow(ts_code).process()
-    # FinaIndicator(ts_code).process()
+    # Balancesheet(ts_code).process()
+    f = get_thread_pool().submit(Balancesheet(ts_code).process)
+    r = f.result()
+    print(r)
+
+
+def test_div():
+    #     dividend
+    df = get_pro().query('dividend', ts_code='', ann_date='20191231')
+    print(df)
+
+
+def test():
+    #     dividend
+    df = get_pro().query('monthly', ts_code='', trade_date='20171231')
+    logging.debug(df)
+
+
+if __name__ == '__main__':
+    # test()
+
+    # multi()
+    Dividend(config.TEST_TS_CODE_3).process()

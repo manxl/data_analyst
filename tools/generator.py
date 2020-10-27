@@ -40,20 +40,20 @@ def dtype_4_fina_generator(file_path, sheet_name):
 
     tpl_str = "'{}': VARCHAR(length={}),"
     tpl_date = "'{}': DATE(),"
-    tpl_float = "'{}': BIGINT(),"
-    tpl_float = "'{}': FLOAT(),"
+    tpl_float = "'{}': Float(precision=53),"
     column_list = ''
     define = '{'
     for i, row in df.iterrows():
-        if i % 3 == 0 and i != 0:
-            define += '\n'
-
+        # if i % 3 == 0 and i != 0:
+        #     define += '\n'
         name = row['name']
         column_list += (name + ',')
         t = row['type']
         if 'str' == t:
             if '_date' in name:
                 define += tpl_date.format(name)
+                if name == 'end_date':
+                    define += "'y': INT(), 'm': INT(),"
                 continue
             elif 'type' in name or 'flag' in name:
                 size = 1
@@ -95,11 +95,5 @@ def match_names(file_path, dict_sheet, report_sheet):
 if __name__ == '__main__':
     p = os.path.dirname
     file_path = os.path.join(p(p(__file__)),'data/define/define.xlsx')
-    sheet_name = 'balancesheet'
-    sheet_name = 'cashflow'
-    sheet_name = 'income'
-
-    # dtype_4_mysql_generator(file_path, sheet_name)
-    sheet_name = 'indicator'
-    sheet_name = 'daily_basic'
+    sheet_name = 'divident'
     dtype_4_fina_generator(file_path, sheet_name)

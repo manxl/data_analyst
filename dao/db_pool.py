@@ -2,22 +2,42 @@ from DBUtils.PooledDB import PooledDB, SharedDBConnection
 from DBUtils.PersistentDB import PersistentDB
 from concurrent.futures import ThreadPoolExecutor
 from threading import Lock
-import yaml, os, re, pymysql, time, xlwt, sys, hashlib, sqlalchemy
+import yaml, os, re, pymysql, time, xlwt, sys, hashlib, sqlalchemy, logging
 from time import sleep, time
 from sqlalchemy import create_engine
 import conf.config as config
 import tushare as ts
 
-engine = None
-pro = ts.pro_api()
+__engine = None
+__pro = None
+__thread_pool = None
+
+
+def get_thread_pool():
+    global __thread_pool
+    if __thread_pool:
+        return __thread_pool
+    __thread_pool = ThreadPoolExecutor(max_workers=config.MULTIPLE, thread_name_prefix="worker_")
+    logging.info('=' * 16 + 'THREAD POOL INITED')
+    return __thread_pool
+
+
+def get_pro():
+    global __pro
+    if __pro:
+        return __pro
+    __pro = ts.pro_api()
+    logging.info('=' * 16 + 'PRO INITED')
+    return __pro
+
 
 def get_engine():
-    global engine
-    if engine:
-        return engine
-    engine = create_engine(get_db_conn_str())
-    print('=' * 64, 'engine inited')
-    return engine
+    global __engine
+    if __engine:
+        return __engine
+    __engine = create_engine(get_db_conn_str())
+    logging.info('=' * 16 + 'ENGINE INITED')
+    return __engine
 
 
 def get_db_conn_str():

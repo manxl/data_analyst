@@ -73,7 +73,7 @@ if __name__ == '__main__':
 
     # ts_code = '000022.SZ'
     # ts_code = config.TEST_TS_CODE_2
-    # init_target_stock_base('601318.SH')
+    # init_target_stock_base('002304.SZ')
     # init_matrix_index_needs(config.TEST_INDEX_CODE_1)
 
     # ts_dao.init_dividend(config.TEST_TS_CODE_3, force='drop')

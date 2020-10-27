@@ -1,3 +1,11 @@
+import logging
+LOG_FROMAT = "%(asctime)s\t%(threadName)s\t%(filename)s\t[%(lineno)d]\t%(levelname)s\t%(message)s"
+DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
+DATE_FORMAT = None
+logging.basicConfig(level=logging.DEBUG, format=LOG_FROMAT, datefmt=DATE_FORMAT, filemode='w')
+
+
+
 
 
 # DB config
