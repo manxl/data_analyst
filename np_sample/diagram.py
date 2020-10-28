@@ -52,23 +52,23 @@ class TestMatplotlib:
 
         # TestMatplotlib.figure_matrix(x_data)
 
-        # TestMatplotlib.figure_grid(x_data)
+        TestMatplotlib.figure_grid(x_data)
 
         # flow layout
-        # TestMatplotlib.figure_flow_layout(x_data)
+        TestMatplotlib.figure_flow_layout(x_data)
 
         # locators
-        # TestMatplotlib.figure_locators()
+        TestMatplotlib.figure_locators()
 
-        # TestMatplotlib.figure_girds()
+        TestMatplotlib.figure_girds()
 
-        # TestMatplotlib.figure_points()
+        TestMatplotlib.figure_points()
 
-        # TestMatplotlib.figure_fill(x_data)
+        TestMatplotlib.figure_fill(x_data)
 
-        # TestMatplotlib.figure_bar()
+        TestMatplotlib.figure_bar()
 
-        # TestMatplotlib.figure_pie()
+        TestMatplotlib.figure_pie()
 
         TestMatplotlib.figure_contour_and_hot()
 
@@ -353,3 +353,4 @@ def test_read_from_csv():
                       converters={2: lambda ymd: '-'.join([ymd.decode()[0:4], ymd.decode()[4:6], ymd.decode()[6:]])}
                       )
 
+# TestMatplotlib.test_2D_figures()

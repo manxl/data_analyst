@@ -6,6 +6,7 @@ from dao.db_pool import get_engine
 # import matplotlib
 # matplotlib.use('Agg')
 # from matplotlib import pyplot as mp
+from dao.tushare_oop_dao import initOne
 import matplotlib.pyplot as mp
 
 
@@ -133,7 +134,7 @@ class Analyser:
         # self.stat['price_touch_assert'] = (df['total_mv'] * 10000 / self.underrate_price_2_touch_assert) < df['total_assets'] - df['intan_assets'] - df['r_and_d'] - df['goodwill']
         # 'intan_assets'] - df['r_and_d'] - df['goodwill'] - df['lt_amor_exp'] - df['defer_tax_assets']
 
-        self.stat['price_touch_assert_exc_1'] = (df['total_mv'] * 10000 ) /2/3 < df['tangible_asset']
+        self.stat['price_touch_assert_exc_1'] = (df['total_mv'] * 10000) / 2 / 3 < df['tangible_asset']
         # self.stat['price_touch_assert_exc_066'] = (df['total_mv'] * 10000 / 0.666 ) < df['total_hldr_eqy_exc_min_int']
 
         # 5. price < total_cur_assets VALUE 2/3
@@ -183,7 +184,7 @@ class Analyser:
                 r = mask
             else:
                 r = r & mask
-            print('{}\t:{}'.format(k,r.sum()))
+            print('{}\t:{}'.format(k, r.sum()))
         df = df[r]
 
         self.stat['total'] = total
@@ -287,7 +288,25 @@ def show():
     mp.show()
 
 
+def show_2():
+    mp.rcParams['font.sans-serif'] = ['KaiTi']
+    mp.rcParams['axes.unicode_minus'] = False
+    # target_list = ['洋河股份', '贵州茅台', '分众传媒', '古井贡酒', '海康威视', '科大讯飞','招商银行','中国平安']
+    target_list = ['洋河股份', '贵州茅台', '分众传媒', '古井贡酒', '海康威视', '科大讯飞','招商银行','中国平安']
+
+    sql = "select roe,y from fina_indicator where ts_code = '{}' and m = 12 order by end_date desc limit 10;"
+    for name in target_list:
+        code = dao.get_code_by_name(name)
+        initOne(code)
+        df = dao.get_df(sql.format(code), 'y')
+        name = dao.get_name_by_code(code)
+        mp.plot(df, label=name)
+    mp.legend()
+    mp.show()
+
+
 if __name__ == '__main__':
-    dao.before_2_clean()
-    analys_array()
+    # dao.before_2_clean()
+    # analys_array()
     # show()
+    show_2()

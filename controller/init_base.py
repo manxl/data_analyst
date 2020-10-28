@@ -65,15 +65,15 @@ def init_single_target():
 
 if __name__ == '__main__':
     # step 1
-    init_base()
+    # init_base()
     # step 2
     # init_stock_all()
     # step 3
-    ts_dao.init_month_matrix_basic()
+    # ts_dao.init_month_matrix_basic()
 
     # ts_code = '000022.SZ'
     # ts_code = config.TEST_TS_CODE_2
-    # init_target_stock_base('002304.SZ')
+    init_target_stock_base('002304.SZ')
     # init_matrix_index_needs(config.TEST_INDEX_CODE_1)
 
     # ts_dao.init_dividend(config.TEST_TS_CODE_3, force='drop')

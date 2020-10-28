@@ -401,7 +401,7 @@ class Dividend(CodeDao):
         r = r.rename(columns={('stk_div', 'sum'): 'stk_div', ('cash_div', 'sum'): 'cash_div', ('y'): 'y'})
         r = r.sort_values(by=['y'], ascending=False)
 
-        data = {'ts_code': np.full((len(r)), ts_code), 'y': r['y'], 'stk_div': r[('stk_div', 'sum')],
+        data = {'ts_code': np.full((len(r)), self._key), 'y': r['y'], 'stk_div': r[('stk_div', 'sum')],
                 'cash_div': r[('cash_div', 'sum')]}
         df = pd.DataFrame(data)
         dtype = {'ts_code': VARCHAR(length=10), 'end_date': DATE(), 'y': INT(),
@@ -430,8 +430,16 @@ def test():
     logging.debug(df)
 
 
+def initOne(ts_code):
+    Balancesheet(ts_code).process()
+    Income(ts_code).process()
+    CashFlow(ts_code).process()
+    FinaIndicator(ts_code).process()
+
+
 if __name__ == '__main__':
     # test()
-
     # multi()
-    Dividend(config.TEST_TS_CODE_3).process()
+    # Dividend(config.TEST_TS_CODE_3).process()
+    ts_code = '002304.SZ'
+    initOne(ts_code)

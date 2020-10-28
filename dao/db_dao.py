@@ -55,8 +55,8 @@ def get_list_all(limit=None, sql=None):
         print('error sql:')
     return df
 
-def before_2_clean():
 
+def before_2_clean():
     get_engine().execute('drop table standard;')
     get_engine().execute('drop table standard_stat;')
 
@@ -157,6 +157,22 @@ def get_stat():
     return df
 
 
+def get_df(sql, index):
+    df = pd.read_sql_query(sql, get_engine())
+    df = df.set_index([index])
+    return df
+
+
+def get_name_by_code(ts_code):
+    sql = "select name from stock_list where ts_code = '{}'".format(ts_code)
+    df = pd.read_sql_query(sql, get_engine())
+    return df.iloc[0, 0]
+
+def get_code_by_name(name):
+    sql = "select ts_code from stock_list where name = '{}'".format(name)
+    df = pd.read_sql_query(sql, get_engine())
+    return df.iloc[0, 0]
+
 def init_table_indexes():
     sql = "SELECT TABLE_NAME FROM information_schema.TABLES where table_schema = '{}' and table_type = 'BASE TABLE';"
     sql = sql.format(SCHEMA)
@@ -213,4 +229,3 @@ def init_table_indexes():
 
 if __name__ == '__main__':
     init_table_indexes()
-
