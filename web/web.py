@@ -15,7 +15,7 @@ logging.basicConfig(level=logging.DEBUG, format=LOG_FROMAT, datefmt=DATE_FORMAT,
 
 app = Flask(__name__)
 
-income_dao = MetaIncome()
+
 
 
 @app.route('/')

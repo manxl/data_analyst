@@ -29,5 +29,16 @@ class C:
         print(self.ts_code)
 
 
-a = C('adsaa')
-print(a.ts_code)
+# a = C('adsaa')
+# print(a.ts_code)
+
+growth = 1.04
+revenge = 1.08
+t = 0
+for i in range(1,200):
+    n = 1 * (growth ** i) / (revenge ** i)
+    t = t + n
+    print('{} - {} - {}'.format(i,n,t))
+
+
+print(1/(revenge - growth))

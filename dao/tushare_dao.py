@@ -3,7 +3,7 @@ import pandas as pd
 import tushare as ts
 from sqlalchemy.types import VARCHAR, Integer, DATE, DECIMAL, INT, BIGINT, FLOAT
 import conf.config as config
-from dao.db_pool import get_engine,pro
+from dao.db_pool import get_engine,get_pro
 from dao.db_pool import MySQL
 import dao.db_dao as dao
 import time, calendar
@@ -225,7 +225,7 @@ def init_stock_price_monthly(ts_code, force=None):
     else:
         print('start 2 pull {} -> {} .'.format(table_name, ts_code))
 
-    df = __pro.monthly(ts_code=ts_code, fields='ts_code,trade_date,open,high,low,close,vol,amount')
+    df = get_pro().monthly(ts_code=ts_code, fields='ts_code,trade_date,open,high,low,close,vol,amount')
     if not len(df):
         return
 
@@ -236,6 +236,22 @@ def init_stock_price_monthly(ts_code, force=None):
              'vol': BIGINT(), 'amount': BIGINT()}
     df.to_sql(table_name, get_engine(), dtype=dtype, index=False, if_exists='append')
 
+def init_fund_nav(ts_code, force=None):
+    table_name = 'fund_nav'
+
+    if not need_pull_check(ts_code, table_name, force):
+        print('need not 2 pull {} -> {}'.format(table_name, ts_code))
+        return
+    else:
+        print('start 2 pull {} -> {} .'.format(table_name, ts_code))
+
+    df = get_pro().fund_nav(ts_code=ts_code)
+    if not len(df):
+        return
+
+    df_add_y_m(df, 'end_date')
+
+    df.to_sql(table_name, get_engine(), index=False, if_exists='append')
 
 def init_dividend(ts_code, force=None):
     table_name = 'stock_dividend_detail'
@@ -570,13 +586,16 @@ def init_test():
 
 
 if __name__ == '__main__':
-    ts_code = config.TEST_TS_CODE_1
-    index_code = config.TEST_INDEX_CODE_1
+    # ts_code = config.TEST_TS_CODE_1
+    # index_code = config.TEST_INDEX_CODE_1
     # init_stock_index(index_code)
     # init_balancesheet(ts_code, force='drop')
     # init_income(ts_code, force='drop')
     # init_cashflow(ts_code, force='drop')
     # init_fina_indicator(ts_code, force='drop')
-    init_month_matrix_basic()
+    # init_month_matrix_basic()
     # init_test()
     # init_fina_indicator(config.TEST_TS_CODE_4)
+    ts_code = '510300.SH'
+    # init_stock_price_monthly()
+    init_fund_nav(ts_code)
