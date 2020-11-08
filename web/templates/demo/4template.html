@@ -9,6 +9,13 @@
 </head>
 
 <body>
+<hr>
+{% block container %}
+<H1>This is parent</H1>
+{% endblock%}
+<hr>
+
+
 <h2>我是模板</h2>
 {{ my_int }}
 <br>
@@ -37,6 +44,26 @@
 {{ my_list[0] + my_list.1 }}
 <hr>
 <input type = "button" onclick = "sayHello()" value = "Say Hello" />
+
+<hr>
+<center>macro inn</center>
+{% macro show_in(str) %}
+    <li>{{str}}</li>
+{% endmacro %}
+{% for str in my_list %}
+{{ show_in(str) }}
+{% endfor %}
+<hr>
+<center>macro import</center>
+{% import 'macro.html' as macros %}
+{% for str in my_list %}
+    {{ macros.show_li(str) }}
+{% endfor %}
+<hr>
+<center>static</center>
+<img src="/static/d.png"/>
+<img src="{{url_for('static',filename='d.png')}}"/>
+
 </body>
 
 </html>

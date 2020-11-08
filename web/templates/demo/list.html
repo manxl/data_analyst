@@ -24,15 +24,15 @@
 <table>
     <tr>
         <td>简单跳转</td>
-        <td><a href="/hello_url/aaa">go</a></td>
+        <td><a href="demo/hello_url/aaa">go</a></td>
     </tr>
     <tr>
         <td>参数跳转</td>
-        <td><a href="/params/1231/2.1/dddd/?force=kknd">go</a></td>
+        <td><a href="demo/params/1231/2.1/dddd/?force=kknd">go</a></td>
     </tr>
     <tr>
         <td>重定向</td>
-        <td><a href="/redirect/url">url</a><br><a href="/redirect/method">method</a></td>
+        <td><a href="demo/redirect/url">url</a><br><a href="demo/redirect/method">method</a></td>
     </tr>
     <tr>
         <td>methods</td>
@@ -42,45 +42,52 @@
                 <p><input type = "text" name = "name" /></p>
                 <p><input type = "submit" value = "submit" /></p>
             </form>
-            <a href="/methods/post?name=123">get</a>
+            <a href="demo/methods/post?name=123">get</a>
         </td>
     </tr>
     <tr>
         <td>template</td>
-        <td><a href="/template">template</a></td>
+        <td><a href="demo/template">template</a></td>
+    </tr>
+    <tr>
+        <td>template child</td>
+        <td>
+            <a href="demo/template/child">template child</a>
+            <a href="demo/template/super">template super</a>
+        </td>
     </tr>
     <tr>
         <td>cookies</td>
         <td>
-            <a href="/cookies/set">set</a>
-            <a href="/cookies/get">get</a>
-            <a href="/cookies/delete">delete</a>
+            <a href="demo/cookies/set">set</a>
+            <a href="demo/cookies/get">get</a>
+            <a href="demo/cookies/delete">delete</a>
         </td>
     </tr>
     <tr>
         <td>session</td>
         <td>
-            <a href="/session/set">set</a>
-            <a href="/session/get">get</a>
-            <a href="/session/delete">delete</a>
+            <a href="demo/session/set">set</a>
+            <a href="demo/session/get">get</a>
+            <a href="demo/session/delete">delete</a>
         </td>
     </tr>
     <tr>
         <td>error</td>
         <td>
-            <a href="/error/403">403</a>
+            <a href="demo/error/403">403</a>
         </td>
     </tr>
     <tr>
         <td>test</td>
         <td>
-            <a href="/test">test</a>
+            <a href="demo/test">test</a>
         </td>
     </tr>
     <tr>
         <td>upload</td>
         <td>
-            <form action="/uploader" method="post" enctype="multipart/form-data">
+            <form action="demo/uploader" method="post" enctype="multipart/form-data">
                 <input type="file" name="file" accept=".jpg,.png" />
                 <input type="submit" />
             </form>
