@@ -55,7 +55,7 @@
 {% endfor %}
 <hr>
 <center>macro import</center>
-{% import 'macro.html' as macros %}
+{% import 'demo/macro.html' as macros %}
 {% for str in my_list %}
     {{ macros.show_li(str) }}
 {% endfor %}

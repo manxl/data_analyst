@@ -1,12 +1,13 @@
 import logging
+
 LOG_FROMAT = "%(asctime)s\t%(threadName)s\t%(filename)s\t[%(lineno)d]\t%(levelname)s\t%(message)s"
 DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
 DATE_FORMAT = None
 logging.basicConfig(level=logging.DEBUG, format=LOG_FROMAT, datefmt=DATE_FORMAT, filemode='w')
 
-
-
-
+FLASK_SECRET_KEY = 'fkdjsafjdkfdlkjfadskjfadskljdsfklj'
+FLASK_UPLOAD_FOLDER = 'static/temp/'
+FLASK_SQLALCHEMY_DATABASE_URI = 'mysql://manxl:111@localhost:3306/analyst'
 
 # DB config
 SCHEMA = 'analyst'
@@ -35,12 +36,3 @@ TEST_INDEX_CODE_1 = '399300.SZ'
 
 YEAR_START = 1990
 YEAR_END = 2020
-
-
-
-
-
-
-
-
-

@@ -1,3 +1,4 @@
 data_analyst.iml
 /.idea/
 *.zip
+__pycache__
