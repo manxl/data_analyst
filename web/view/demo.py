@@ -1,7 +1,6 @@
 from flask import Blueprint
 
-demo = Blueprint('demo', __name__)
-
+demo = Blueprint('demo', __name__, template_folder='../templates/demo')
 
 from flask import Flask, request, render_template, redirect, url_for, make_response, session, abort, flash
 import logging
@@ -12,7 +11,7 @@ from werkzeug.utils import secure_filename
 
 @demo.route('/list')
 def demo_index():
-    return render_template('demo/list.html')
+    return render_template('list.html')
 
 
 @demo.route('/hello_url/<name>')
@@ -57,19 +56,19 @@ def methods_post():
 
 @demo.route('/template')
 def methods_templte():
-    template_name = 'demo/4template.html'
+    template_name = '4template.html'
     return comm_template(template_name)
 
 
 @demo.route('/template/child')
 def templte_sub():
-    template_name = 'demo/child.html'
+    template_name = 'child.html'
     return comm_template(template_name)
 
 
 @demo.route('/template/super')
 def templte_super():
-    template_name = 'demo/super.html'
+    template_name = 'super.html'
     return comm_template(template_name)
 
 
@@ -151,12 +150,12 @@ def login():
         flash('You were successfully logged in')
         flash('========================')
         return redirect(url_for('demo.scripts'))
-    return render_template('demo/login.html', error=error)
+    return render_template('login.html', error=error)
 
 
 @demo.route('/scripts')
 def scripts():
-    return render_template('demo/scripts.html')
+    return render_template('scripts.html')
 
 
 @demo.route('/test')
@@ -170,7 +169,6 @@ def uploader():
     f = request.files['file']
     f.save(os.path.join(FLASK_UPLOAD_FOLDER, secure_filename(f.filename)))
     return 'upload suceess'
-
 
 # if __name__ == '__main__':
 #     app.run(host='0.0.0.0', port=80, debug=True)

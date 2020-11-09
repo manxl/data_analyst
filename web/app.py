@@ -3,7 +3,7 @@
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 import logging
-from conf.config import FLASK_SQLALCHEMY_DATABASE_URI,FLASK_UPLOAD_FOLDER,FLASK_SECRET_KEY
+from conf.config import FLASK_SQLALCHEMY_DATABASE_URI, FLASK_UPLOAD_FOLDER, FLASK_SECRET_KEY
 from web.view.tushare import main
 from web.view.demo import demo
 
@@ -18,6 +18,7 @@ app.secret_key = FLASK_SECRET_KEY
 app.config['UPLOAD_FOLDER'] = FLASK_UPLOAD_FOLDER
 # 数据库初始化
 app.config['SQLALCHEMY_DATABASE_URI'] = FLASK_SQLALCHEMY_DATABASE_URI
+
 fdb = SQLAlchemy(app)
 
 from web.model.pojo import User

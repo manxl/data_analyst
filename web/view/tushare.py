@@ -30,7 +30,7 @@ def test_graph122():
 ####################################################
 @main.route('/db/insert')
 def db_insert():
-    users = User('罗汉1', 39, 'aluohan12@sina.com')
+    users = User('罗汉', 40, '2aluohan12@sina.com')
     fdb.session.add(users)
     fdb.session.commit()
     return 'insert ok'
@@ -47,8 +47,9 @@ def db_select():
     for u in r:
         s += 'a:{},b:{},c:{}<br>'.format(u.id, u.age,u.username)
 
-    o = User.query.filter_by(id=2)
-    s +='<br><br>' + o.first().__repr__()
+    # o = User.query.filter_by(id=3)
+    o = User.query.filter_by(username='罗汉')
+    s +='<br><br>' + o.one().__repr__()
 
     return s
 

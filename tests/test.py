@@ -13,9 +13,10 @@ import abc
 
 
 class C:
-    def __init__(self, code):
+    def __init__(self, code, kk):
         print('init')
         self._key = code
+        self.kk = None
 
     @property
     def ts_code(self):
@@ -29,16 +30,11 @@ class C:
         print(self.ts_code)
 
 
-# a = C('adsaa')
-# print(a.ts_code)
+a = C('adsaa', 'kk_123')
+print(a.ts_code)
+print('=' * 32)
+m = {'ts_code': 333, 'kk': 'kk_123'}
+s = 'ts_code:{ts_code}\tkk:'.format(**m)
 
-growth = 1.04
-revenge = 1.08
-t = 0
-for i in range(1,200):
-    n = 1 * (growth ** i) / (revenge ** i)
-    t = t + n
-    print('{} - {} - {}'.format(i,n,t))
-
-
-print(1/(revenge - growth))
+print('=' * 32)
+print(a.ts_code, a.kk)

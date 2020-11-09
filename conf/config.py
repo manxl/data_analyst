@@ -1,5 +1,14 @@
 import logging
 
+Y = 'y'
+M = 'm'
+D = 'd'
+OPERATION_TRUNCATE = 't'
+OPERATION_APPEND = 'a'
+
+
+ERROR_NOT_INITED = 'f405'
+
 LOG_FROMAT = "%(asctime)s\t%(threadName)s\t%(filename)s\t[%(lineno)d]\t%(levelname)s\t%(message)s"
 DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
 DATE_FORMAT = None
