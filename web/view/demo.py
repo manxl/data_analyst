@@ -5,7 +5,7 @@ demo = Blueprint('demo', __name__)
 
 from flask import Flask, request, render_template, redirect, url_for, make_response, session, abort, flash
 import logging
-
+from conf.config import FLASK_UPLOAD_FOLDER
 import os
 from werkzeug.utils import secure_filename
 
@@ -168,7 +168,7 @@ def test():
 @demo.route('/uploader', methods=['POST'])
 def uploader():
     f = request.files['file']
-    f.save(os.path.join(config['UPLOAD_FOLDER'], secure_filename(f.filename)))
+    f.save(os.path.join(FLASK_UPLOAD_FOLDER, secure_filename(f.filename)))
     return 'upload suceess'
 
 

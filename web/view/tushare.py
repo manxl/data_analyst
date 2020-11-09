@@ -2,7 +2,7 @@ from flask import Blueprint
 
 main = Blueprint('ts', __name__)
 
-from web.web_base import fdb
+from web.app import fdb
 from web.model.pojo import User
 from flask import request, render_template
 import pandas as pd
@@ -30,7 +30,7 @@ def test_graph122():
 ####################################################
 @main.route('/db/insert')
 def db_insert():
-    users = User('罗汉', 38, 'aluohan1@sina.com')
+    users = User('罗汉1', 39, 'aluohan12@sina.com')
     fdb.session.add(users)
     fdb.session.commit()
     return 'insert ok'
@@ -43,7 +43,14 @@ def db_select():
     print(a)
     r = a.all()
     print(r)
-    return 'insert ok'
+    s = ""
+    for u in r:
+        s += 'a:{},b:{},c:{}<br>'.format(u.id, u.age,u.username)
+
+    o = User.query.filter_by(id=2)
+    s +='<br><br>' + o.first().__repr__()
+
+    return s
 
 
 # create

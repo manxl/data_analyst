@@ -1,4 +1,4 @@
-from web.web_base import fdb
+from web.app import fdb
 
 
 class User(fdb.Model):
@@ -13,5 +13,5 @@ class User(fdb.Model):
         self.age = age
         self.email = email
 
-        def __repr__(self):
-            return '<users:%r' % self.username
+    def __repr__(self):
+        return 'users:{},age:{},email:{}'.format(self.username,self.age,self.email)
