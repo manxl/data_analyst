@@ -11,7 +11,6 @@ class BaseDao(metaclass=abc.ABCMeta):
     """
         所有方DAO基类
     """
-
     def __init__(self, fields=None):
         self._interface = None
         self._need_check_column = None

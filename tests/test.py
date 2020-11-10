@@ -1,17 +1,3 @@
-import pandas as pd
-import numpy as np
-from dao.db_pool import get_engine
-from sqlalchemy.types import VARCHAR, Integer, DATE, DECIMAL, INT, BIGINT, FLOAT, Float, NUMERIC
-import re, inspect
-from decimal import *
-
-import tushare as ts
-import conf.config as config
-# import stock.calc as calc
-# import dao.tushare_dao as tsdao
-import abc
-
-
 class C:
     def __init__(self, code, kk):
         print('init')
@@ -30,11 +16,20 @@ class C:
         print(self.ts_code)
 
 
-a = C('adsaa', 'kk_123')
-print(a.ts_code)
-print('=' * 32)
-m = {'ts_code': 333, 'kk': 'kk_123'}
-s = 'ts_code:{ts_code}\tkk:'.format(**m)
+def test_class():
+    a = C('adsaa', 'kk_123')
+    print(a.ts_code)
+    print('=' * 32)
+    m = {'ts_code': 333, 'kk': 'kk_123'}
+    s = 'ts_code:{ts_code}\tkk:'.format(**m)
 
-print('=' * 32)
-print(a.ts_code, a.kk)
+    print('=' * 32)
+    print(a.ts_code, a.kk)
+
+
+for i in range(4):
+    print(i)
+
+
+
+

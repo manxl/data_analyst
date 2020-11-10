@@ -170,5 +170,28 @@ def uploader():
     f.save(os.path.join(FLASK_UPLOAD_FOLDER, secure_filename(f.filename)))
     return 'upload suceess'
 
-# if __name__ == '__main__':
-#     app.run(host='0.0.0.0', port=80, debug=True)
+@demo.route('/db/insert')
+def db_insert():
+    from web.model.pojo import User
+    u = User('罗汉', 40, '2aluohan12@sina.com')
+    u.add_update()
+
+    return 'insert ok'
+
+
+@demo.route('/db/select')
+def db_select():
+    from web.model.pojo import User
+
+    r = User.query.all()
+
+    s = ""
+    for u in r:
+        s += 'a:{},b:{},c:{}<br>'.format(u.id, u.age, u.username)
+
+    # o = User.query.filter_by(id=3)
+    o = User.query.filter_by(id=1).one()
+    s += '<br><br>' + o.__repr__()
+    o.username = o.username + "123"
+    # o.add_update()
+    return s

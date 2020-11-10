@@ -1,33 +1,37 @@
 # import sys
 # sys.path.append("D:\storage\workspaces\idea-2020\data_analyst")
-from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
-import logging
-from conf.config import FLASK_SQLALCHEMY_DATABASE_URI, FLASK_UPLOAD_FOLDER, FLASK_SECRET_KEY
-from web.view.tushare import main
-from web.view.demo import demo
 
-LOG_FORMAT = "%(asctime)s\t%(filename)s\t[line:%(lineno)d]\t%(levelname)s\t%(message)s"
-DATE_FORMAT = "%a,%d %b %Y-%m-%d %H:%M:%S"
-logging.basicConfig(level=logging.DEBUG, format=LOG_FORMAT, datefmt=DATE_FORMAT, filemode='w')
 
-app = Flask(__name__)
-# 初始化session
-app.secret_key = FLASK_SECRET_KEY
-# 文件上传目录
-app.config['UPLOAD_FOLDER'] = FLASK_UPLOAD_FOLDER
-# 数据库初始化
-app.config['SQLALCHEMY_DATABASE_URI'] = FLASK_SQLALCHEMY_DATABASE_URI
+def __init():
+    from flask import Flask
+    from conf.config import FLASK_SQLALCHEMY_DATABASE_URI, FLASK_UPLOAD_FOLDER, FLASK_SECRET_KEY
 
-fdb = SQLAlchemy(app)
+    app = Flask(__name__)
+    # 初始化session
+    app.secret_key = FLASK_SECRET_KEY
+    # 文件上传目录
+    app.config['UPLOAD_FOLDER'] = FLASK_UPLOAD_FOLDER
+    # 数据库初始化
+    app.config['SQLALCHEMY_DATABASE_URI'] = FLASK_SQLALCHEMY_DATABASE_URI
+    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
 
-from web.model.pojo import User
+    from web.model.pojo import db
+    db.init_app(app)
 
-fdb.create_all()
+    from web.model.pojo import User
 
-# 注册蓝图
-app.register_blueprint(main)
-app.register_blueprint(demo, url_prefix='/demo')
+    db.create_all(app=app)
+
+    # 注册蓝图
+    from web.view.tushare import main
+    app.register_blueprint(main)
+
+    from web.view.demo import demo
+    app.register_blueprint(demo, url_prefix='/demo')
+
+    return app
+
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=80, debug=True)
+    app1 = __init()
+    app1.run(host='0.0.0.0', port=80, debug=True)

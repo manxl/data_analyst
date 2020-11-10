@@ -1,13 +1,14 @@
-from flask import Blueprint
+from flask import Blueprint, redirect, url_for
+
 
 main = Blueprint('ts', __name__)
+print('-' * 128)
 
-from web.app import fdb
-from web.model.pojo import User
 from flask import request, render_template
 import pandas as pd
 from dao.db_pool import get_engine
 import matplotlib.pyplot as mp
+from controller.controllers import *
 
 
 @main.route('/meta/reload_income')
@@ -27,38 +28,50 @@ def test_graph122():
     return render_template('demo/abc.html', name=df, url='static/images/new_plot1.png')
 
 
+
+
+
 ####################################################
-@main.route('/db/insert')
-def db_insert():
-    users = User('罗汉', 40, '2aluohan12@sina.com')
-    fdb.session.add(users)
-    fdb.session.commit()
-    return 'insert ok'
+@main.route('/stock_basic/process', methods=['GET'])
+def stock_basic_process():
+    stock_basic_ctl = StockBasicController()
+    stock_basic_ctl.process()
+    return r()
 
 
-@main.route('/db/select')
-def db_select():
-    users = User('罗汉', 38, 'aluohan1@sina.com')
-    a = fdb.session.query(User)
-    print(a)
-    r = a.all()
-    print(r)
-    s = ""
-    for u in r:
-        s += 'a:{},b:{},c:{}<br>'.format(u.id, u.age,u.username)
-
-    # o = User.query.filter_by(id=3)
-    o = User.query.filter_by(username='罗汉')
-    s +='<br><br>' + o.one().__repr__()
-
-    return s
+@main.route('/stock_basic/delete', methods=['GET'])
+def stock_basic_delete():
+    stock_basic_ctl = StockBasicController()
+    stock_basic_ctl.delete()
+    return r()
 
 
-# create
-# fdb.create_all()
+@main.route('/trade_cal/process', methods=['GET'])
+def trade_cal_process():
+    stock_basic_ctl = TradeCalController()
+    stock_basic_ctl.process()
+    return r()
+
+
+@main.route('/trade_cal/delete', methods=['GET'])
+def trade_cal_delete():
+    stock_basic_ctl = TradeCalController()
+    stock_basic_ctl.delete()
+    return r()
 
 
 ####################################################
 @main.route('/')
 def root():
-    return render_template('demo/main.html')
+    stock_basic_ctl = StockBasicController()
+    stock_basic_flag = stock_basic_ctl.is_need_process()
+
+    trade_cal_ctl = TradeCalController()
+    trade_cal_flag = trade_cal_ctl.is_need_process()
+
+    return render_template('main.html', **locals())
+    # return render_template('main.html', stock_basic_ctl=stock_basic_ctl, stock_basic_his=stock_basic_his)
+
+
+def r():
+    return redirect(url_for('ts.root'))

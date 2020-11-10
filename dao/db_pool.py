@@ -41,7 +41,8 @@ def get_engine():
 
 
 def get_db_conn_str():
-    return "mysql+pymysql://{}:{}@{}:{}/{}?charset=utf8".format(config.USER, config.PASSWORD, config.HOST, config.PORT, config.SCHEMA)
+    return "mysql+pymysql://{}:{}@{}:{}/{}?charset=utf8".format(config.USER, config.PASSWORD, config.HOST, config.PORT,
+                                                                config.SCHEMA)
 
 
 class MySQL:
@@ -160,11 +161,28 @@ class MySQL:
         return result[0]['id']
 
     def __query(self, sql, param=None):
-        if param is None:
-            count = cur.execute(sql)
-        else:
-            count = cur.execute(sql, param)
-        return count
+        # if param is None:
+        #     count = cur.execute(sql)
+        # else:
+        #     count = cur.execute(sql, param)
+        # return count
+
+        con = self.__pool.connection()
+        cur = con.cursor(pymysql.cursors.DictCursor)
+        try:
+            if param is None:
+                count = cur.execute(sql)
+            else:
+                count = cur.execute(sql, param)
+            return count
+        except Exception as e:
+            # con.rollback()  # 事务回滚
+            print('SQL执行有误,原因:', e)
+            result = None
+        finally:
+            cur.close()
+            con.close()
+        return result
 
     def update(self, sql, param=None):
         """

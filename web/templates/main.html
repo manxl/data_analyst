@@ -1,0 +1,70 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+        "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <title>Tushare Pull Control Panel</title>
+    <style>
+        table,
+        table tr th,
+        table tr td {
+            border: 1px solid #0094ff;
+        }
+        {##}
+        {#table {#}
+        {#    width: 200px;#}
+        {#    min-height: 25px;#}
+        {#    line-height: 25px;#}
+        {#    text-align: center;#}
+        {#    border-collapse: collapse;#}
+        {#    padding: 2px;#}
+        {#}#}
+    </style>
+</head>
+<body>
+    <table>
+        <tr>
+            <th>Table</th>
+            <th width="100px" >ctl</th>
+            <th width="200px">his</th>
+            <th>operation</th>
+            <th>delete</th>
+        </tr>
+        <tr>
+            <td>stock_basic</td>
+            <td>
+                {{ stock_basic_ctl.cyc }}|{{ stock_basic_ctl.operate }}|
+            </td>
+            <td>{{ stock_basic_ctl.his }}</td>
+            <td>
+                {% if stock_basic_flag  %}
+                    <a href="/{{ stock_basic_ctl.get_table_name() }}/process">process</a>
+                {% endif %}
+            </td>
+            <th>
+                {% if stock_basic_ctl.his  %}
+                    <a href="/{{ stock_basic_ctl.get_table_name() }}/delete">delete</a>
+                {% endif %}
+            </th>
+        </tr>
+
+
+        <tr>
+            <td>trade_cal</td>
+            <td>
+                {{ trade_cal_ctl.cyc }}|{{ trade_cal_ctl.operate }}|
+            </td>
+            <td>{{ trade_cal_ctl.his }}</td>
+            <td>
+                {% if trade_cal_flag  %}
+                    <a href="/{{ trade_cal_ctl.get_table_name() }}/process">process</a>
+                {% endif %}
+            </td>
+            <th>
+                {% if trade_cal_ctl.his  %}
+                    <a href="/{{ trade_cal_ctl.get_table_name() }}/delete">delete</a>
+                {% endif %}
+            </th>
+        </tr>
+    </table>
+</body>
+</html>

@@ -1,12 +1,28 @@
-from web.app import fdb
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy import Column, Integer, String, CHAR, DATE
+from flask_sqlalchemy import SQLAlchemy
+from datetime import date
+
+db = SQLAlchemy()
 
 
-class User(fdb.Model):
+class BaseModel(object):
+
+    def add_update(self):
+        db.session.add(self)
+        db.session.commit()
+
+    def delete(self):
+        db.session.delete(self)
+        db.session.commit()
+
+
+class User():
     __tablename__ = 'user'
-    id = fdb.Column(fdb.Integer, primary_key=True)
-    username = fdb.Column(fdb.String(80), nullable=False)
-    age = fdb.Column(fdb.Integer)
-    email = fdb.Column(fdb.String(120), unique=True)
+    id = Column(Integer, primary_key=True)
+    username = Column(String(80), nullable=False)
+    age = Column(Integer)
+    email = Column(String(120), unique=True)
 
     def __init__(self, username, age, email):
         self.username = username
@@ -14,36 +30,30 @@ class User(fdb.Model):
         self.email = email
 
     def __repr__(self):
-        return 'users:{},age:{},email:{}'.format(self.username,self.age,self.email)
+        return 'users:{},age:{},email:{}'.format(self.username, self.age, self.email)
 
 
-class CTL(fdb.Model):
-    __tablename__ = 'ctl'
-    id = fdb.Column(fdb.Integer, primary_key=True,autoincrement=True)
-    table = fdb.Column(fdb.String(80), nullable=False)
-    t = fdb.Column(fdb.CHAR(1), nullable=False)
-    end_date = fdb.Column(fdb.DATE)
-    y = fdb.Column(fdb.Integer)
-    m = fdb.Column(fdb.Integer)
-    d = fdb.Column(fdb.Integer)
+class His(BaseModel, db.Model):
+    __tablename__ = 'his'
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    table_name = Column(String(40), nullable=False)
+    key = Column(String(40), nullable=True)
+    end_date = Column(DATE)
+    y = Column(Integer)
+    m = Column(Integer)
+    d = Column(Integer)
 
-    def __init__(self, table, t, end_date):
-        self.table = table
-        self.t = t
+    def __init__(self, table_name, key , end_date=None):
+        self.table_name = table_name
+        self.key = key
         self.end_date = end_date
 
     def init(self):
-        if self.t == 'y':
-            self.y = self.end_date.apply(lambda s: int(s[:4]))
-        elif self.t == 'm':
-            self.y = self.end_date.apply(lambda s: int(s[:4]))
-            self.m = self.end_date.apply(lambda s: int(s[4:6]))
-        elif self.t == 'd':
-            self.y = self.end_date.apply(lambda s: int(s[:4]))
-            self.m = self.end_date.apply(lambda s: int(s[4:6]))
-            self.d = self.end_date.apply(lambda s: int(s[6:]))
-
+        self.end_date = date.today()
+        self.y = self.end_date.year
+        self.m = self.end_date.month
+        self.d = self.end_date.day
         return self
 
     def __repr__(self):
-        return 'users:{},age:{},email:{}'.format(self.username,self.age,self.email)
+        return 'end_date:{}'.format(self.end_date)
