@@ -25,6 +25,11 @@ def test_graph122():
 
 
 ####################################################
+"""
+    stock basic controllers 
+"""
+
+
 @main.route('/stock_basic/process', methods=['GET'])
 def stock_basic_process():
     stock_basic_ctl = StockBasicController()
@@ -58,6 +63,12 @@ def index_weight_process(index_code):
     stock_basic_ctl = IndexWeightController(index_code)
     stock_basic_ctl.process()
     return r()
+
+
+####################################################
+"""
+    stock finance controllers 
+"""
 
 
 @main.route('/index_weight/<index_code>/delete', methods=['GET'])
@@ -98,6 +109,17 @@ def one_delete(ts_code):
     return r()
 
 
+@main.route('/all_stock/<operate>', methods=['GET'])
+def all_stock(operate):
+    if 'process' == operate:
+        AllController().process()
+    elif 'delete' == operate:
+        AllController().delete()
+    else:
+        raise Exception('Unsupported type {}', operate)
+    return r()
+
+
 @main.route('/fina/<fina>/<ts_code>/<operate>', methods=['GET'])
 def fina_process(fina, ts_code, operate):
     if 'process' == operate:
@@ -118,7 +140,7 @@ def one_fina_process(ts_code, operate):
         ctl.delete()
     elif 'view' == operate:
         meta = ctl.get_biz_data()
-        return render_template('stk.html', meta = meta)
+        return render_template('stk.html', meta=meta)
     else:
         raise Exception('Unsupported type {}', operate)
     return r()
@@ -133,7 +155,7 @@ def one_index_process(index_code, operate):
         ctl.delete()
     elif 'view' == operate:
         ctls = ctl.get_biz_data()
-        return render_template('idx.html', ctls = ctls)
+        return render_template('idx.html', ctls=ctls)
     else:
         raise Exception('Unsupported type {}', operate)
     return r()
@@ -157,8 +179,32 @@ def set_session_ts_code():
 
 
 ####################################################
+"""
+    Daily Controller  
+"""
+
+
+@main.route('/daily/<operate>', methods=['GET'])
+def daily(operate):
+    ctl = DailyBasicController()
+    if 'process' == operate:
+        ctl.process()
+    elif 'delete' == operate:
+        ctl.delete()
+    elif 'view' == operate:
+        ctls = ctl.get_biz_data()
+        return render_template('idx.html', ctls=ctls)
+    else:
+        raise Exception('Unsupported type {}', operate)
+    return r()
+
+
+####################################################
 @main.route('/')
 def root():
+    """
+        basic meta
+    """
     stock_basic_ctl = StockBasicController()
     stock_basic_flag = stock_basic_ctl.is_need_process()
 
@@ -173,6 +219,9 @@ def root():
     index_weight_ctl_000016 = IndexWeightController(index_code)
     index_weight_flag_000016 = index_weight_ctl_000016.is_need_process()
 
+    """
+        stock finance
+    """
     if 'ts_code' not in session:
         ts_code = TEST_TS_CODE_ZGPA
     else:
@@ -188,6 +237,13 @@ def root():
     one_fina = OneFinaController(ts_code)
 
     one_index = OneIndexController(TEST_INDEX_CODE_SZ50)
+
+    all_stock = AllController()
+    """
+        dayly
+    """
+
+    daily_basic = DailyBasicController()
 
     return render_template('main.html', **locals())
     # return render_template('main.html', stock_basic_ctl=stock_basic_ctl, stock_basic_his=stock_basic_his)

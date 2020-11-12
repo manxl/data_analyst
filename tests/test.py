@@ -1,7 +1,9 @@
 import pandas as pd
-from dao.db_pool import get_engine
+from dao.db_pool import get_engine,get_pro
 import datetime
 from dao.db_pool import get_pro
+from tools.utils import df_add_y_m
+from sqlalchemy.types import VARCHAR, DATE, INT, Float, DECIMAL, Integer, FLOAT
 
 class C:
     def __init__(self, code, kk):
@@ -21,15 +23,32 @@ class C:
         print(self.ts_code)
 
 
-# sql = """select * from index_weight where index_code = '399396.SZ' and con_code = '000799.SZ';"""
-# d1 = pd.read_sql_query(sql, get_engine())
-# d2 = d1[2:]
+def init_month_matrix_basic():
+    table_name = 'stock_month_matrix_basic'
+    sql = 'select * from trade_date where m != 0 ;'
+    yms = pd.read_sql_query(sql, get_engine())
 
-# finas = 'income,cashflow,fina_indicator,balancesheet'.split(',')
-# for f in finas:
-#     print("select count(*) from {} where ts_code = '300437.SZ' \nUNION all ".format(f))
+    df = None
+    for i, row in yms.iterrows():
+        first_trade_date_str = row['first'].strftime('%Y%m%d')
+        last_last_date_str = row['last'].strftime('%Y%m%d')
+        data = get_pro().daily_basic(ts_code='', trade_date=last_last_date_str)
+        print(last_last_date_str)
+        if df is None:
+            df = data
+        else:
+            df = df.append(data)
+    df_add_y_m(df, 'trade_date')
+    df.reset_index(drop=True)
+    df = df.iloc[::-1]
+    dtype = {'ts_code': VARCHAR(length=10), 'trade_date': DATE(), 'close': FLOAT(),
+             'y': INT(), 'm': INT(),
+             'turnover_rate': FLOAT(), 'turnover_rate_f': FLOAT(), 'volume_ratio': FLOAT(),
+             'pe': FLOAT(), 'pe_ttm': FLOAT(), 'pb': FLOAT(),
+             'ps': FLOAT(), 'ps_ttm': FLOAT(), 'dv_ratio': FLOAT(),
+             'dv_ttm': FLOAT(), 'total_share': FLOAT(), 'float_share': FLOAT(),
+             'free_share': FLOAT(), 'total_mv': FLOAT(), 'circ_mv': FLOAT()}
+    df.to_sql(table_name, get_engine(), dtype=dtype, index=False, if_exists='append')
 
-
-biz_code = '000016.SH'
-df = get_pro().index_weight( index_code=biz_code, start_date='20201001', end_date='20201101')
-print(df)
+if __name__ == '__main__':
+    init_month_matrix_basic()

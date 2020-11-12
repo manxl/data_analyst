@@ -5,7 +5,7 @@ import abc, logging, time
 import pandas as pd
 from dao.db_pool import get_engine, get_pro
 from web.model.pojo import His
-from sqlalchemy.types import VARCHAR, DATE, INT, Float, DECIMAL, Integer
+from sqlalchemy.types import VARCHAR, DATE, INT, Float, DECIMAL, Integer, FLOAT
 from datetime import date
 from tools.utils import df_add_y_m, df_add_y
 import numpy as np
@@ -145,18 +145,10 @@ class StockBasicController(BaseController):
 class TradeCalController(BaseController):
 
     def __init__(self):
-        super().__init__('trade_cal', CTL_CYCLE_YEAR, CTL_OPERATE_TRUNCATE)
+        super().__init__('trade_cal', CTL_CYCLE_YEAR, CTL_OPERATE_TRUNCATE, calc_table='_detail')
 
     def _update_ts(self):
         self._delete_ts()
-
-    def _delete_ts(self):
-        sql = 'drop table if exists {}'.format(self.get_table_name() + '_detail')
-        get_engine().execute(sql)
-        logging.info(sql)
-        sql = 'drop table if exists {}'.format(self.get_table_name())
-        get_engine().execute(sql)
-        logging.info(sql)
 
     def _init_ts(self):
         template_start = '{}00101'
@@ -369,3 +361,62 @@ class OneIndexController(MultiCtlController):
             sub_ctls.append(OneFinaController(ts_code))
         return sub_ctls
 
+
+class AllController(MultiCtlController):
+    def __init__(self):
+        super().__init__('all', None)
+
+    def _init_ts(self, his=None):
+        for ts_code in self._get_con_codes():
+            OneFinaController(ts_code).process()
+
+    def _delete_ts(self):
+        for ts_code in self._get_con_codes():
+            OneFinaController(ts_code).delete()
+
+    def _get_con_codes(self):
+        sql = """select * from stock_basic"""
+
+        df = pd.read_sql_query(sql, get_engine())
+
+        return df['ts_code']
+
+    def get_biz_data(self):
+        con_codes = self._get_con_codes()
+        sub_ctls = []
+        for ts_code in con_codes:
+            sub_ctls.append(OneFinaController(ts_code))
+        return sub_ctls
+
+
+class DailyBasicController(BaseController):
+
+    def __init__(self):
+        super().__init__('daily_basic', CTL_CYCLE_DAY, CTL_OPERATE_TRUNCATE)
+
+    def _init_ts(self):
+        self._update_ts()
+
+    def _update_ts(self):
+        cal_date = self._get_nearest_cal_date()
+        if cal_date is None:
+            return
+        trade_date = cal_date.strftime('%Y%m%d')
+        df = get_pro().daily_basic(ts_code='', trade_date=trade_date)
+
+        dtype = {'ts_code': VARCHAR(length=10), 'trade_date': DATE(), 'close': FLOAT(),
+                 'y': INT(), 'm': INT(),
+                 'turnover_rate': FLOAT(), 'turnover_rate_f': FLOAT(), 'volume_ratio': FLOAT(),
+                 'pe': FLOAT(), 'pe_ttm': FLOAT(), 'pb': FLOAT(),
+                 'ps': FLOAT(), 'ps_ttm': FLOAT(), 'dv_ratio': FLOAT(),
+                 'dv_ttm': FLOAT(), 'total_share': FLOAT(), 'float_share': FLOAT(),
+                 'free_share': FLOAT(), 'total_mv': FLOAT(), 'circ_mv': FLOAT()}
+        df.to_sql(self.get_table_name(), get_engine(), dtype=dtype, index=False, if_exists='append')
+
+    def _get_nearest_cal_date(self):
+        sql = 'select cal_date from trade_date_detail  where cal_date  <= curdate() order by cal_date desc limit 1;'
+        df = pd.read_sql_query(sql, get_engine())
+        cal_date = df.iloc[0]['cal_date']
+        if self.his is not None and cal_date <= self.his.end_date:
+            return None
+        return cal_date

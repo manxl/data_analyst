@@ -219,6 +219,52 @@
                 {% endif %}
             </th>
         </tr>
+
+        <tr>
+            <td>
+                ALL
+            </td>
+            <td>
+                {{ all_stock.cyc }}|{{ all_stock.operate }}|
+            </td>
+            <td>
+                <a href="/all_stock/{{ all_stock.biz_code }}/view">{{ all_stock.biz_code }}</a>
+            </td>
+            <td>{{ all_stock.his }}</td>
+            <td>
+                {% if all_stock.is_need_process()  %}
+                    <a href="/all_stock/process">{{ all_stock.is_need_process() }}</a>
+                {% endif %}
+            </td>
+            <th>
+                {% if all_stock.his  %}
+                    <a href="/all_stock/delete">delete</a>
+                {% endif %}
+            </th>
+        </tr>
+
+        <tr>
+            <td>
+                Dialy Basic
+            </td>
+            <td>
+                {{ daily_basic.cyc }}|{{ daily_basic.operate }}|
+            </td>
+            <td>
+
+            </td>
+            <td>{{ daily_basic.his }}</td>
+            <td>
+                {% if daily_basic.is_need_process()  %}
+                    <a href="/daily/process">{{ daily_basic.is_need_process() }}</a>
+                {% endif %}
+            </td>
+            <th>
+                {% if daily_basic.his  %}
+                    <a href="/daily/delete">delete</a>
+                {% endif %}
+            </th>
+        </tr>
     </table>
 
 
