@@ -3,16 +3,12 @@ import pandas as pd
 
 from sqlalchemy.types import VARCHAR, Integer, DATE, DECIMAL, INT, BIGINT, FLOAT
 import conf.config as config
-from dao.db_pool import get_engine,get_pro
+from dao.db_pool import get_engine, get_pro
 from dao.db_pool import MySQL
 import dao.db_dao as dao
 import time, calendar
 from concurrent.futures import ThreadPoolExecutor
 import logging
-
-
-
-
 
 
 def init_stock_list_all():
@@ -164,6 +160,7 @@ def init_stock_price_monthly(ts_code, force=None):
              'vol': BIGINT(), 'amount': BIGINT()}
     df.to_sql(table_name, get_engine(), dtype=dtype, index=False, if_exists='append')
 
+
 def init_fund_nav(ts_code, force=None):
     table_name = 'fund_nav'
 
@@ -180,6 +177,7 @@ def init_fund_nav(ts_code, force=None):
     df_add_y_m(df, 'end_date')
 
     df.to_sql(table_name, get_engine(), index=False, if_exists='append')
+
 
 def init_dividend(ts_code, force=None):
     table_name = 'stock_dividend_detail'

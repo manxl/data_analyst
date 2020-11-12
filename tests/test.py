@@ -1,3 +1,8 @@
+import pandas as pd
+from dao.db_pool import get_engine
+import datetime
+from dao.db_pool import get_pro
+
 class C:
     def __init__(self, code, kk):
         print('init')
@@ -16,20 +21,15 @@ class C:
         print(self.ts_code)
 
 
-def test_class():
-    a = C('adsaa', 'kk_123')
-    print(a.ts_code)
-    print('=' * 32)
-    m = {'ts_code': 333, 'kk': 'kk_123'}
-    s = 'ts_code:{ts_code}\tkk:'.format(**m)
+# sql = """select * from index_weight where index_code = '399396.SZ' and con_code = '000799.SZ';"""
+# d1 = pd.read_sql_query(sql, get_engine())
+# d2 = d1[2:]
 
-    print('=' * 32)
-    print(a.ts_code, a.kk)
+# finas = 'income,cashflow,fina_indicator,balancesheet'.split(',')
+# for f in finas:
+#     print("select count(*) from {} where ts_code = '300437.SZ' \nUNION all ".format(f))
 
 
-for i in range(4):
-    print(i)
-
-
-
-
+biz_code = '000016.SH'
+df = get_pro().index_weight( index_code=biz_code, start_date='20201001', end_date='20201101')
+print(df)

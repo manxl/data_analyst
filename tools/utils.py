@@ -37,6 +37,15 @@ def drop_more_nan_row(df, column_name):
     return df.loc[mask]
 
 
+def drop_row_by_cal(d1, d2, col_name):
+    """
+    过滤dataFrame1 内 dataFrame2 重复值重复的列
+    """
+    l = d2[col_name].values.tolist()
+    flag = d1[col_name].apply(lambda x: x not in l)
+    return d1[flag]
+
+
 def need_pull_check(code, table_name, force=None, condition_column='ts_code'):
     if force is None:
         sql = "select count(*) from {} where {} = '{}';".format(table_name, condition_column, code)

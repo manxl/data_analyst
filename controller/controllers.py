@@ -1,27 +1,23 @@
 from conf.config import Y, M, D, OPERATION_TRUNCATE, OPERATION_APPEND, ERROR_NOT_INITED
+import abc, logging, time
 import pandas as pd
 from dao.db_pool import get_engine, get_pro
-import abc, logging
 from web.model.pojo import His
 from sqlalchemy.types import VARCHAR, DATE, INT, Float, DECIMAL, Integer
 from datetime import date
-from dao.db_pool import MySQL
 from tools.utils import df_add_y_m, df_add_y
 import numpy as np
-
-CTL_CYCLE_YEAR = 'y'
-CTL_CYCLE_MONTH = 'm'
-CTL_CYCLE_DAY = 'd'
-CTL_OPERATE_TRUNCATE = 'T'
-CTL_OPERATE_APPEND = 'A'
+from concurrent.futures import ThreadPoolExecutor
+import dao.db_dao as dao
+from conf.config import *
 
 
 class BaseController:
-    def __init__(self, interface, cyc, operate, key=None, key_name=None):
+    def __init__(self, interface, cyc, operate, biz_code=None, biz_col_name=None):
         logging.debug('Init Controller {}'.format(self.__class__))
         self.interface = interface
-        self.key = key
-        self.key_name = key_name
+        self.biz_code = biz_code
+        self.biz_col_name = biz_col_name
         self.cyc = cyc
         self.operate = operate
         self.his = None
@@ -37,67 +33,72 @@ class BaseController:
         elif type(self.his) is His and self.is_need_process():
             self.update()
         else:
-            exit(4)
+            # exit(4)
+            logging.debug('{} {} is not need process'.format(self.biz_code,self.interface))
+            pass
 
     def is_need_process(self):
         if self.his is None:
-            return True
+            return CTL_PROCESS_INIT
 
         today = date.today()
         if self.cyc == CTL_CYCLE_YEAR and self.his.y != today.year:
-            return True
+            pass
         elif self.cyc == CTL_CYCLE_MONTH and (self.his.y != today.year or self.his.m != today.month):
-            return True
+            pass
         elif self.cyc == CTL_CYCLE_DAY and (
                 self.his.y != today.year or self.his.m != today.month or self.his.d != today.day):
-            return True
+            pass
+        else:
+            return None
+        return CTL_PROCESS_UPDATE
 
     def load_his(self):
-        his = His.query.filter_by(table_name=self.get_table_name(), key=self.key)
+        his = His.query.filter_by(table_name=self.get_table_name(), biz_code=self.biz_code)
         try:
             his = his.one()
-        except Exception as e:
+        except Exception:
             his = None
         self.his = his
 
     def init(self):
-        self._init_his()
         self._init_ts()
-
-    def _init_his(self):
-        his = His(self.get_table_name(), self.key).init()
-        his.add_update()
+        self._init_his()
 
     @abc.abstractmethod
     def _init_ts(self):
         pass
 
+    def _init_his(self):
+        his = His(self.get_table_name(), self.biz_code).init()
+        his.save()
+
     def update(self):
-        self._update_his()
         self._update_ts()
+        self._update_his()
 
     def _update_his(self):
-        his = His.query.filter_by(table_name=self.get_table_name(), key=self.key).one()
+        his = His.query.filter_by(table_name=self.get_table_name(), biz_code=self.biz_code).one()
         his.init()
-        his.add_update()
+        his.save()
 
     @abc.abstractmethod
     def _update_ts(self):
         pass
 
     def delete(self):
-        self._delete_his()
         self._delete_ts()
+        self._delete_his()
 
     def _delete_his(self):
-        his = His.query.filter_by(table_name=self.get_table_name(), key=self.key).one()
+        his = His.query.filter_by(table_name=self.get_table_name(), biz_code=self.biz_code).one()
         his.delete()
 
     def _delete_ts(self):
         if self.operate == CTL_OPERATE_TRUNCATE:
             sql = 'drop table if exists {}'.format(self.get_table_name())
         elif self.operate == CTL_OPERATE_APPEND:
-            sql = "delete from {} where {} = '{}'".format(self.get_table_name(), self.key_name, self.key)
+            sql = "delete from {} where {} = '{}'".format(self.get_table_name(), self.biz_col_name, self.biz_code)
         get_engine().execute(sql)
         logging.info(sql)
 
@@ -140,7 +141,7 @@ class TradeCalController(BaseController):
         self._delete_ts()
 
     def _delete_ts(self):
-        sql = 'drop table if exists {}'.format(self.get_table_name()+'_detail')
+        sql = 'drop table if exists {}'.format(self.get_table_name() + '_detail')
         get_engine().execute(sql)
         logging.info(sql)
         sql = 'drop table if exists {}'.format(self.get_table_name())
@@ -201,3 +202,87 @@ class TradeCalController(BaseController):
                  index=False,
                  dtype={'first': DATE(), 'last': DATE(), 'y': Integer(), 'm': INT()}
                  , if_exists='replace')
+
+
+class IndexWeightController(BaseController):
+
+    def __init__(self, biz_code):
+        super().__init__('index_weight', CTL_CYCLE_MONTH, CTL_OPERATE_APPEND, biz_code=biz_code,
+                         biz_col_name='index_code')
+
+    def _update_ts(self):
+        self._delete_ts()
+        self._init_ts()
+
+    def _init_ts(self):
+        y_start = 1990
+
+        __pool = ThreadPoolExecutor(max_workers=MULTIPLE, thread_name_prefix="test_")
+        fs = []
+        i = 0
+        for y_i in range(31)[::-1]:
+            y = y_start + y_i
+            first, last = dao.get_trade_date(y, 0)
+            if not first:
+                continue
+            print("{}-{}".format(y, 0))
+            first = first.strftime('%Y%m%d')
+            last = last.strftime('%Y%m%d')
+            f1 = __pool.submit(get_pro().index_weight, index_code=self.biz_code, start_date=first, end_date=first)
+            f2 = __pool.submit(get_pro().index_weight, index_code=self.biz_code, start_date=last, end_date=last)
+            fs.append(f1)
+            fs.append(f2)
+            i += 2
+            if i > 197:
+                print('198次后休息60秒')
+                time.sleep(60)
+                i = 0
+
+        df = None
+        for f2 in fs:
+            temp_df = f2.result()
+            if len(temp_df):
+                if df is None:
+                    df = temp_df
+                else:
+                    df = df.append(temp_df, ignore_index=True)
+
+        df_add_y_m(df, 'trade_date')
+
+        dtype = {'index_code': VARCHAR(length=10), 'con_code': VARCHAR(length=10), 'y': INT, 'm': INT,
+                 'trade_date': DATE(), 'weight': DECIMAL(precision=10, scale=6)}
+
+        df = df.reindex(columns='index_code,con_code,y,m,trade_date,weight'.split(','))
+
+        df.to_sql(self.get_table_name(), get_engine(), dtype=dtype, index=False, if_exists='append')
+
+
+class FinaBaseController(BaseController):
+
+    def __init__(self, table, biz_code):
+        super().__init__(table, CTL_CYCLE_DAY, CTL_OPERATE_APPEND, biz_code=biz_code, biz_col_name='ts_code')
+
+    def _update_ts(self):
+        self._init_ts(his=self.his)
+
+    def _init_ts(self, his=None):
+        if 'income' == self.interface:
+            from dao.ts import Income
+            handler = Income(self.biz_code, his)
+        elif 'cashflow' == self.interface:
+            from dao.ts import CashFlow
+            handler = CashFlow(self.biz_code, his)
+        elif 'fina_indicator' == self.interface:
+            from dao.ts import FinaIndicator
+            handler = FinaIndicator(self.biz_code, his)
+        elif 'balancesheet' == self.interface:
+            from dao.ts import BalanceSheet
+            handler = BalanceSheet(self.biz_code, his)
+        else:
+            raise Exception('unsuppurt interface {}'.format(self.interface))
+        handler.process()
+
+
+class IncomeController(FinaBaseController):
+    def __init__(self, biz_code):
+        super().__init__('income', biz_code)

@@ -99,6 +99,18 @@
             </form>
         </td>
     </tr>
+    <tr>
+        <td>DB</td>
+        <td>
+            <a href="/demo/db/insert">insert</a>
+            <a href="/demo/db/select">select</a>
+            <a href="/demo/db/rollback">rollback</a>
+
+            {% for u in  user_list %}
+                <br>{{ u.id }}~{{ u.username }}|<a href="/demo/db/delete/{{ u.id }}">delete</a>
+            {% endfor %}
+        </td>
+    </tr>
 </table>
 </body>
 </html>

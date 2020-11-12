@@ -8,16 +8,16 @@ db = SQLAlchemy()
 
 class BaseModel(object):
 
-    def add_update(self):
+    def save(self):
         db.session.add(self)
-        db.session.commit()
+        # db.session.commit()
 
     def delete(self):
         db.session.delete(self)
-        db.session.commit()
+        # db.session.commit()
 
 
-class User():
+class User(BaseModel, db.Model):
     __tablename__ = 'user'
     id = Column(Integer, primary_key=True)
     username = Column(String(80), nullable=False)
@@ -37,15 +37,15 @@ class His(BaseModel, db.Model):
     __tablename__ = 'his'
     id = Column(Integer, primary_key=True, autoincrement=True)
     table_name = Column(String(40), nullable=False)
-    key = Column(String(40), nullable=True)
+    biz_code = Column(String(40), nullable=True)
     end_date = Column(DATE)
     y = Column(Integer)
     m = Column(Integer)
     d = Column(Integer)
 
-    def __init__(self, table_name, key , end_date=None):
+    def __init__(self, table_name, biz_code, end_date=None):
         self.table_name = table_name
-        self.key = key
+        self.biz_code = biz_code
         self.end_date = end_date
 
     def init(self):

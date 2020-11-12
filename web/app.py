@@ -14,6 +14,7 @@ def __init():
     # 数据库初始化
     app.config['SQLALCHEMY_DATABASE_URI'] = FLASK_SQLALCHEMY_DATABASE_URI
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
+    app.config['SQLALCHEMY_COMMIT_ON_TEARDOWN'] = True
 
     from web.model.pojo import db
     db.init_app(app)
@@ -23,10 +24,10 @@ def __init():
     db.create_all(app=app)
 
     # 注册蓝图
-    from web.view.tushare import main
+    from web.view.ts_view import main
     app.register_blueprint(main)
 
-    from web.view.demo import demo
+    from web.view.demo_view import demo
     app.register_blueprint(demo, url_prefix='/demo')
 
     return app
@@ -35,3 +36,4 @@ def __init():
 if __name__ == '__main__':
     app1 = __init()
     app1.run(host='0.0.0.0', port=80, debug=True)
+

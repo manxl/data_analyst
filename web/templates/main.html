@@ -24,7 +24,7 @@
     <table>
         <tr>
             <th>Table</th>
-            <th width="100px" >ctl</th>
+            <th width="100px" >Ctl</th>
             <th width="200px">his</th>
             <th>operation</th>
             <th>delete</th>
@@ -37,7 +37,7 @@
             <td>{{ stock_basic_ctl.his }}</td>
             <td>
                 {% if stock_basic_flag  %}
-                    <a href="/{{ stock_basic_ctl.get_table_name() }}/process">process</a>
+                    <a href="/{{ stock_basic_ctl.get_table_name() }}/process">{{ stock_basic_flag }}</a>
                 {% endif %}
             </td>
             <th>
@@ -56,7 +56,7 @@
             <td>{{ trade_cal_ctl.his }}</td>
             <td>
                 {% if trade_cal_flag  %}
-                    <a href="/{{ trade_cal_ctl.get_table_name() }}/process">process</a>
+                    <a href="/{{ trade_cal_ctl.get_table_name() }}/process">{{ trade_cal_flag }}</a>
                 {% endif %}
             </td>
             <th>
@@ -65,6 +65,59 @@
                 {% endif %}
             </th>
         </tr>
+
+        <tr>
+            <td rowspan="2">index_weight</td>
+            <td>
+                {{ index_weight_ctl_510310.cyc }}|{{ index_weight_ctl_510310.operate }}|
+            </td>
+            <td>{{ index_weight_ctl_510310.biz_code }}|{{ index_weight_ctl_510310.his }}</td>
+            <td>
+                {% if index_weight_flag_510310  %}
+                    <a href="/{{ index_weight_ctl_510310.get_table_name() }}/{{ index_weight_ctl_510310.biz_code }}/process">{{ index_weight_flag_510310 }}</a>
+                {% endif %}
+            </td>
+            <th>
+                {% if index_weight_ctl_510310.his  %}
+                    <a href="/{{ index_weight_ctl_510310.get_table_name() }}/{{ index_weight_ctl_510310.biz_code }}/delete">delete</a>
+                {% endif %}
+            </th>
+        </tr>
+        <tr>
+            <td>
+                {{ index_weight_ctl_000016.cyc }}|{{ index_weight_ctl_000016.operate }}|
+            </td>
+            <td>{{ index_weight_ctl_000016.biz_code }}|{{ index_weight_ctl_000016.his }}</td>
+            <td>
+                {% if index_weight_flag_000016  %}
+                    <a href="/{{ index_weight_ctl_000016.get_table_name() }}/{{ index_weight_ctl_000016.biz_code }}/process">{{ index_weight_flag_000016 }}</a>
+                {% endif %}
+            </td>
+            <th>
+                {% if index_weight_ctl_000016.his  %}
+                    <a href="/{{ index_weight_ctl_000016.get_table_name() }}/{{ index_weight_ctl_000016.biz_code }}/delete">delete</a>
+                {% endif %}
+            </th>
+        </tr>
+
+        <tr>
+            <td rowspan="2">income</td>
+            <td>
+                {{ income_ctl_sqy.cyc }}|{{ income_ctl_sqy.operate }}|
+            </td>
+            <td>{{ income_ctl_sqy.biz_code }}|{{ income_ctl_sqy.his }}</td>
+            <td>
+                {% if income_ctl_fag  %}
+                    <a href="/{{ income_ctl_sqy.get_table_name() }}/{{ income_ctl_sqy.biz_code }}/process">{{ income_ctl_fag }}</a>
+                {% endif %}
+            </td>
+            <th>
+                {% if income_ctl_sqy.his  %}
+                    <a href="/{{ income_ctl_sqy.get_table_name() }}/{{ income_ctl_sqy.biz_code }}/delete">delete</a>
+                {% endif %}
+            </th>
+        </tr>
+
     </table>
 </body>
 </html>

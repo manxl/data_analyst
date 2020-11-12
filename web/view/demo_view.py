@@ -11,7 +11,9 @@ from werkzeug.utils import secure_filename
 
 @demo.route('/list')
 def demo_index():
-    return render_template('list.html')
+    from web.model.pojo import User
+    us = User.query.all()
+    return render_template('list.html', user_list=us)
 
 
 @demo.route('/hello_url/<name>')
@@ -170,11 +172,12 @@ def uploader():
     f.save(os.path.join(FLASK_UPLOAD_FOLDER, secure_filename(f.filename)))
     return 'upload suceess'
 
+
 @demo.route('/db/insert')
 def db_insert():
     from web.model.pojo import User
-    u = User('罗汉', 40, '2aluohan12@sina.com')
-    u.add_update()
+    u = User('罗汉1', 40, '1aluohan12@sina.com')
+    u.save()
 
     return 'insert ok'
 
@@ -195,3 +198,21 @@ def db_select():
     o.username = o.username + "123"
     # o.add_update()
     return s
+
+
+@demo.route('/db/rollback')
+def db_rollback():
+    from web.model.pojo import User
+    u = User('罗汉5', 40, '5aluohan12@sina.com')
+    u.save()
+    # print(1/0)
+    return 'insert ok'
+
+
+@demo.route('/db/delete/<uid>')
+def db_delete(uid):
+    from web.model.pojo import User
+    us = User.query.filter_by(id=uid)
+    u = us.one()
+    u.delete()
+    return redirect(url_for('demo.demo_index'))
