@@ -2,7 +2,7 @@ from flask import Blueprint, redirect, url_for
 
 main = Blueprint('ts', __name__)
 
-from flask import request, render_template
+from flask import request, render_template, session
 import matplotlib.pyplot as mp
 from controller.controllers import *
 
@@ -98,6 +98,64 @@ def one_delete(ts_code):
     return r()
 
 
+@main.route('/fina/<fina>/<ts_code>/<operate>', methods=['GET'])
+def fina_process(fina, ts_code, operate):
+    if 'process' == operate:
+        FinaBaseController(fina, ts_code).process()
+    elif 'delete' == operate:
+        FinaBaseController(fina, ts_code).delete()
+    else:
+        raise Exception('Unsupported type {}', operate)
+    return r()
+
+
+@main.route('/one_fina/<ts_code>/<operate>', methods=['GET'])
+def one_fina_process(ts_code, operate):
+    ctl = OneFinaController(ts_code)
+    if 'process' == operate:
+        ctl.process()
+    elif 'delete' == operate:
+        ctl.delete()
+    elif 'view' == operate:
+        meta = ctl.get_biz_data()
+        return render_template('stk.html', meta = meta)
+    else:
+        raise Exception('Unsupported type {}', operate)
+    return r()
+
+
+@main.route('/one_index/<index_code>/<operate>', methods=['GET'])
+def one_index_process(index_code, operate):
+    ctl = OneIndexController(index_code)
+    if 'process' == operate:
+        ctl.process()
+    elif 'delete' == operate:
+        ctl.delete()
+    elif 'view' == operate:
+        ctls = ctl.get_biz_data()
+        return render_template('idx.html', ctls = ctls)
+    else:
+        raise Exception('Unsupported type {}', operate)
+    return r()
+
+
+@main.route('/set/session', methods=['GET', 'POST'])
+def set_session_ts_code():
+    ts_code = request.values.get('ts_code')
+
+    if not ts_code:
+        return 'need input ts code '
+    sql = """select ts_code from stock_basic where ts_code like '{}%%'""".format(ts_code)
+    df = pd.read_sql_query(sql, get_engine())
+    if len(df) == 0:
+        return 'error ts_code'
+
+    ts_code = df.iloc[0, 0]
+    session['ts_code'] = ts_code
+
+    return r()
+
+
 ####################################################
 @main.route('/')
 def root():
@@ -115,9 +173,21 @@ def root():
     index_weight_ctl_000016 = IndexWeightController(index_code)
     index_weight_flag_000016 = index_weight_ctl_000016.is_need_process()
 
-    ts_code = TEST_TS_CODE_4_QSY
-    income_ctl_sqy = IncomeController(ts_code)
-    income_ctl_fag = income_ctl_sqy.is_need_process()
+    if 'ts_code' not in session:
+        ts_code = TEST_TS_CODE_ZGPA
+    else:
+        ts_code = session['ts_code']
+
+    income = IncomeController(ts_code)
+    dividend = FinaBaseController('dividend', ts_code)
+
+    one_ctls = []
+    for n in 'balancesheet,income,cashflow,fina_indicator,dividend'.split(','):
+        one_ctls.append(FinaBaseController(n, ts_code))
+
+    one_fina = OneFinaController(ts_code)
+
+    one_index = OneIndexController(TEST_INDEX_CODE_SZ50)
 
     return render_template('main.html', **locals())
     # return render_template('main.html', stock_basic_ctl=stock_basic_ctl, stock_basic_his=stock_basic_his)

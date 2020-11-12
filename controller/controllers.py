@@ -1,3 +1,5 @@
+from abc import ABC
+
 from conf.config import Y, M, D, OPERATION_TRUNCATE, OPERATION_APPEND, ERROR_NOT_INITED
 import abc, logging, time
 import pandas as pd
@@ -13,7 +15,7 @@ from conf.config import *
 
 
 class BaseController:
-    def __init__(self, interface, cyc, operate, biz_code=None, biz_col_name=None):
+    def __init__(self, interface, cyc, operate, biz_code=None, biz_col_name=None, calc_table=None):
         logging.debug('Init Controller {}'.format(self.__class__))
         self.interface = interface
         self.biz_code = biz_code
@@ -21,7 +23,7 @@ class BaseController:
         self.cyc = cyc
         self.operate = operate
         self.his = None
-
+        self.calc_table = calc_table
         self.load_his()
 
     def get_table_name(self):
@@ -34,7 +36,7 @@ class BaseController:
             self.update()
         else:
             # exit(4)
-            logging.debug('{} {} is not need process'.format(self.biz_code,self.interface))
+            logging.debug('{} {} is not need process'.format(self.biz_code, self.interface))
             pass
 
     def is_need_process(self):
@@ -54,7 +56,7 @@ class BaseController:
         return CTL_PROCESS_UPDATE
 
     def load_his(self):
-        his = His.query.filter_by(table_name=self.get_table_name(), biz_code=self.biz_code)
+        his = His.query.filter_by(table_name=self.interface, biz_code=self.biz_code)
         try:
             his = his.one()
         except Exception:
@@ -70,7 +72,7 @@ class BaseController:
         pass
 
     def _init_his(self):
-        his = His(self.get_table_name(), self.biz_code).init()
+        his = His(self.interface, self.biz_code).init()
         his.save()
 
     def update(self):
@@ -78,7 +80,7 @@ class BaseController:
         self._update_his()
 
     def _update_his(self):
-        his = His.query.filter_by(table_name=self.get_table_name(), biz_code=self.biz_code).one()
+        his = His.query.filter_by(table_name=self.interface, biz_code=self.biz_code).one()
         his.init()
         his.save()
 
@@ -91,7 +93,7 @@ class BaseController:
         self._delete_his()
 
     def _delete_his(self):
-        his = His.query.filter_by(table_name=self.get_table_name(), biz_code=self.biz_code).one()
+        his = His.query.filter_by(table_name=self.interface, biz_code=self.biz_code).one()
         his.delete()
 
     def _delete_ts(self):
@@ -100,7 +102,15 @@ class BaseController:
         elif self.operate == CTL_OPERATE_APPEND:
             sql = "delete from {} where {} = '{}'".format(self.get_table_name(), self.biz_col_name, self.biz_code)
         get_engine().execute(sql)
-        logging.info(sql)
+        logging.info('==delete_ts ' + sql)
+        if self.calc_table:
+            if self.operate == CTL_OPERATE_TRUNCATE:
+                sql = 'drop table if exists {}'.format(self.get_table_name() + self.calc_table)
+            elif self.operate == CTL_OPERATE_APPEND:
+                sql = "delete from {} where {} = '{}'".format(self.get_table_name() + self.calc_table,
+                                                              self.biz_col_name, self.biz_code)
+            get_engine().execute(sql)
+            logging.info('==delete_ts ' + sql)
 
 
 class StockBasicController(BaseController):
@@ -260,7 +270,11 @@ class IndexWeightController(BaseController):
 class FinaBaseController(BaseController):
 
     def __init__(self, table, biz_code):
-        super().__init__(table, CTL_CYCLE_DAY, CTL_OPERATE_APPEND, biz_code=biz_code, biz_col_name='ts_code')
+        if 'dividend' == table:
+            super().__init__(table, CTL_CYCLE_DAY, CTL_OPERATE_APPEND, biz_code=biz_code, biz_col_name='ts_code',
+                             calc_table='_stat')
+        else:
+            super().__init__(table, CTL_CYCLE_DAY, CTL_OPERATE_APPEND, biz_code=biz_code, biz_col_name='ts_code')
 
     def _update_ts(self):
         self._init_ts(his=self.his)
@@ -278,6 +292,9 @@ class FinaBaseController(BaseController):
         elif 'balancesheet' == self.interface:
             from dao.ts import BalanceSheet
             handler = BalanceSheet(self.biz_code, his)
+        elif 'dividend' == self.interface:
+            from dao.ts import Dividend
+            handler = Dividend(self.biz_code, his)
         else:
             raise Exception('unsuppurt interface {}'.format(self.interface))
         handler.process()
@@ -286,3 +303,69 @@ class FinaBaseController(BaseController):
 class IncomeController(FinaBaseController):
     def __init__(self, biz_code):
         super().__init__('income', biz_code)
+
+
+class MultiCtlController(BaseController, ABC):
+    def __init__(self, interface, biz_code):
+        super().__init__(interface, CTL_CYCLE_DAY, CTL_OPERATE_APPEND, biz_code=biz_code, biz_col_name='biz_code')
+
+    def get_table_name(self):
+        return 'his'
+
+    def _update_ts(self):
+        self._init_ts()
+
+    @abc.abstractmethod
+    def get_biz_data(self):
+        pass
+
+
+class OneFinaController(MultiCtlController):
+    def __init__(self, biz_code):
+        super().__init__('one_fina', biz_code)
+        self._targets = 'balancesheet,income,cashflow,fina_indicator,dividend'.split(',')
+
+    def _init_ts(self, his=None):
+        for target in self._targets:
+            FinaBaseController(target, biz_code=self.biz_code).process()
+
+    def _delete_ts(self):
+        for target in self._targets:
+            FinaBaseController(target, biz_code=self.biz_code).delete()
+
+    def get_biz_data(self):
+        sub_ctls = []
+        for target in self._targets:
+            sub_ctls.append(FinaBaseController(target, biz_code=self.biz_code))
+        return sub_ctls
+
+
+class OneIndexController(MultiCtlController):
+    def __init__(self, biz_code):
+        super().__init__('one_index', biz_code)
+
+    def _init_ts(self, his=None):
+        for ts_code in self._get_con_codes():
+            OneFinaController(ts_code).process()
+
+    def _delete_ts(self):
+        for ts_code in self._get_con_codes():
+            OneFinaController(ts_code).delete()
+
+    def _get_con_codes(self):
+        sql = """select * from index_weight where index_code = '{}'
+                and trade_date = (select max(trade_date) from  index_weight where index_code = '{}')""".format(
+            self.biz_code, self.biz_code, )
+
+        df = pd.read_sql_query(sql, get_engine())
+        if len(df) == 0:
+            raise Exception('index not initialed.')
+        return df['con_code']
+
+    def get_biz_data(self):
+        con_codes = self._get_con_codes()
+        sub_ctls = []
+        for ts_code in con_codes:
+            sub_ctls.append(OneFinaController(ts_code))
+        return sub_ctls
+

@@ -541,6 +541,6 @@ def initOne(ts_code):
 if __name__ == '__main__':
     # test()
     # multi()
-    Dividend(config.TEST_TS_CODE_3_ZGPA).process()
+    Dividend(config.TEST_TS_CODE_ZGPA).process()
     # ts_code = config.TEST_TS_CODE_5
     # initOne(ts_code)

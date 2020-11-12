@@ -113,7 +113,6 @@ class CodeDao:
 
 
 class BalanceSheet(CodeDao):
-
     def __init__(self, ts_code, his=None):
         super().__init__(ts_code, his)
         self._interface = 'balancesheet'
@@ -135,7 +134,6 @@ class CashFlow(CodeDao):
 
 
 class FinaIndicator(CodeDao):
-
     def __init__(self, ts_code, his=None):
         super().__init__(ts_code, his)
         self._interface = 'fina_indicator'
@@ -143,7 +141,6 @@ class FinaIndicator(CodeDao):
 
 
 class Dividend(CodeDao):
-
     def __init__(self, ts_code, his=None):
         super().__init__(ts_code, his)
         self._interface = 'dividend'
@@ -154,6 +151,12 @@ class Dividend(CodeDao):
 
     def _add_y_m(self):
         self._add_y()
+
+    def _add_y(self):
+        loc = np.where(self._df.columns.values.T == 'end_date')[0][0]
+        loc = int(loc) + 1
+        y = self._df['end_date'].apply(lambda s: int(s[:4]))
+        self._df.insert(loc, 'y', y)
 
     def _second_process(self):
         table_name = self._interface + '_stat'

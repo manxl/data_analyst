@@ -1,0 +1,56 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+        "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <title>Index Control Panel</title>
+    <style>
+        table,
+        table tr th,
+        table tr td {
+            border: 1px solid #0094ff;
+        }
+
+    </style>
+</head>
+<body>
+    <table>
+        <tr>
+            <th>Table</th>
+            <th width="150px" >Ctl</th>
+            <th width="200px" >biz_code</th>
+            <th width="200px">his</th>
+            <th>operation</th>
+            <th>delete</th>
+        </tr>
+
+        {% for ctl in ctls %}
+        <tr>
+            <td>
+                {{ ctl.interface }}
+            </td>
+            <td>
+                {{ ctl.cyc }}|{{ ctl.operate }}
+            </td>
+            <td>
+                <a href="/one_fina/{{ ctl.biz_code }}/view">{{ ctl.biz_code }}</a>
+            </td>
+            <td>{{ ctl.his }}</td>
+            <td>
+                {% if ctl.is_need_process()  %}
+                    <a href="/fina/{{ ctl.interface }}/{{ ctl.biz_code }}/process">{{ ctl.is_need_process() }}</a>
+                {% endif %}
+            </td>
+            <th>
+                {% if ctl.his  %}
+                    <a href="/fina/{{ ctl.interface }}/{{ ctl.biz_code }}/delete">delete</a>
+                {% endif %}
+            </th>
+        </tr>
+        {% endfor %}
+
+    </table>
+
+
+
+</body>
+</html>
