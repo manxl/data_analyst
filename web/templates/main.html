@@ -38,8 +38,8 @@
             <td></td>
             <td>{{ stock_basic_ctl.his }}</td>
             <td>
-                {% if stock_basic_flag  %}
-                    <a href="/{{ stock_basic_ctl.get_table_name() }}/process">{{ stock_basic_flag }}</a>
+                {% if stock_basic_ctl.is_need_process()  %}
+                    <a href="/{{ stock_basic_ctl.get_table_name() }}/process">{{ stock_basic_ctl.is_need_process() }}</a>
                 {% endif %}
             </td>
             <th>
@@ -59,13 +59,53 @@
             <td>{{ trade_cal_ctl.his }}</td>
 
             <td>
-                {% if trade_cal_flag  %}
-                    <a href="/{{ trade_cal_ctl.get_table_name() }}/process">{{ trade_cal_flag }}</a>
+                {% if trade_cal_ctl.is_need_process()  %}
+                    <a href="/{{ trade_cal_ctl.get_table_name() }}/process">{{ trade_cal_ctl.is_need_process() }}</a>
                 {% endif %}
             </td>
             <th>
                 {% if trade_cal_ctl.his  %}
                     <a href="/{{ trade_cal_ctl.get_table_name() }}/delete">delete</a>
+                {% endif %}
+            </th>
+        </tr>
+
+        <tr>
+            <td>Daily Basic Month</td>
+            <td>
+                {{ daily_basic_month_ctl.cyc }}|{{ daily_basic_month_ctl.operate }}|
+            </td>
+            <td></td>
+            <td>{{ daily_basic_month_ctl.his }}</td>
+
+            <td>
+                {% if daily_basic_month_ctl.is_need_process()  %}
+                    <a href="/{{ daily_basic_month_ctl.get_table_name() }}/process">{{ daily_basic_month_ctl.is_need_process() }}</a>
+                {% endif %}
+            </td>
+            <th>
+                {% if daily_basic_month_ctl.his  %}
+                    <a href="/{{ daily_basic_month_ctl.get_table_name() }}/delete">delete</a>
+                {% endif %}
+            </th>
+        </tr>
+
+        <tr>
+            <td>Daily Basic</td>
+            <td>
+                {{ daily_basic_ctl.cyc }}|{{ daily_basic_ctl.operate }}|
+            </td>
+            <td></td>
+            <td>{{ daily_basic_ctl.his }}</td>
+
+            <td>
+                {% if trade_cal_flag  %}
+                    <a href="/{{ daily_basic_ctl.get_table_name() }}/process">{{ trade_cal_flag }}</a>
+                {% endif %}
+            </td>
+            <th>
+                {% if daily_basic_ctl.his  %}
+                    <a href="/{{ daily_basic_ctl.get_table_name() }}/delete">delete</a>
                 {% endif %}
             </th>
         </tr>
@@ -200,6 +240,10 @@
         <tr>
             <td>
                 One Index Code
+                <form action="/set/session" method="post">
+                    <input type="input" name="index_code"/>
+                    <input type="submit" value="submit"/>
+                </form>
             </td>
             <td>
                 {{ one_index.cyc }}|{{ one_index.operate }}|

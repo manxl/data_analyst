@@ -14,12 +14,10 @@ def __init():
     # 数据库初始化
     app.config['SQLALCHEMY_DATABASE_URI'] = FLASK_SQLALCHEMY_DATABASE_URI
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
-    app.config['SQLALCHEMY_COMMIT_ON_TEARDOWN'] = True
+    # app.config['SQLALCHEMY_COMMIT_ON_TEARDOWN'] = True
 
     from web.model.pojo import db
     db.init_app(app)
-
-    from web.model.pojo import User
 
     db.create_all(app=app)
 
@@ -36,4 +34,3 @@ def __init():
 if __name__ == '__main__':
     app1 = __init()
     app1.run(host='0.0.0.0', port=80, debug=True)
-

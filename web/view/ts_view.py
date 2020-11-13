@@ -65,6 +65,28 @@ def index_weight_process(index_code):
     return r()
 
 
+@main.route('/daily_basic_month/<operate>', methods=['GET'])
+def daily_basic_month(operate):
+    if 'process' == operate:
+        DailyBasicMonthController().process()
+    elif 'delete' == operate:
+        DailyBasicMonthController().delete()
+    else:
+        raise Exception('Unsupported type {}', operate)
+    return r()
+
+
+@main.route('/daily_basic/<operate>', methods=['GET'])
+def daily_basic(operate):
+    if 'process' == operate:
+        DailyBasicController().process()
+    elif 'delete' == operate:
+        DailyBasicController().delete()
+    else:
+        raise Exception('Unsupported type {}', operate)
+    return r()
+
+
 ####################################################
 """
     stock finance controllers 
@@ -164,16 +186,22 @@ def one_index_process(index_code, operate):
 @main.route('/set/session', methods=['GET', 'POST'])
 def set_session_ts_code():
     ts_code = request.values.get('ts_code')
+    index_code = request.values.get('index_code')
+    if ts_code:
+        sql = """select ts_code from stock_basic where ts_code like '{}%%'""".format(ts_code)
+        df = pd.read_sql_query(sql, get_engine())
+        if len(df) == 0:
+            return 'error ts_code'
 
-    if not ts_code:
-        return 'need input ts code '
-    sql = """select ts_code from stock_basic where ts_code like '{}%%'""".format(ts_code)
-    df = pd.read_sql_query(sql, get_engine())
-    if len(df) == 0:
-        return 'error ts_code'
-
-    ts_code = df.iloc[0, 0]
-    session['ts_code'] = ts_code
+        ts_code = df.iloc[0, 0]
+        session['ts_code'] = ts_code
+    elif index_code:
+        sql = """select index_code from index_weight where index_code like '{}%%'""".format(index_code)
+        df = pd.read_sql_query(sql, get_engine())
+        if len(df) == 0:
+            return 'error ts_code'
+        ts_code = df.iloc[0, 0]
+        session['index_code'] = ts_code
 
     return r()
 
@@ -206,18 +234,16 @@ def root():
         basic meta
     """
     stock_basic_ctl = StockBasicController()
-    stock_basic_flag = stock_basic_ctl.is_need_process()
-
     trade_cal_ctl = TradeCalController()
-    trade_cal_flag = trade_cal_ctl.is_need_process()
+
+    daily_basic_month_ctl = DailyBasicMonthController()
+    daily_basic_ctl = DailyBasicController()
 
     index_code = '399300.SZ'
     index_weight_ctl_510310 = IndexWeightController(index_code)
-    index_weight_flag_510310 = index_weight_ctl_510310.is_need_process()
 
     index_code = '000016.SH'
     index_weight_ctl_000016 = IndexWeightController(index_code)
-    index_weight_flag_000016 = index_weight_ctl_000016.is_need_process()
 
     """
         stock finance
@@ -226,8 +252,8 @@ def root():
         ts_code = TEST_TS_CODE_ZGPA
     else:
         ts_code = session['ts_code']
-
     income = IncomeController(ts_code)
+
     dividend = FinaBaseController('dividend', ts_code)
 
     one_ctls = []
@@ -236,9 +262,15 @@ def root():
 
     one_fina = OneFinaController(ts_code)
 
-    one_index = OneIndexController(TEST_INDEX_CODE_SZ50)
+    if 'index_code' not in session:
+        index_code = TEST_INDEX_CODE_SZ50
+    else:
+        index_code = session['index_code']
+
+    one_index = OneIndexController(index_code)
 
     all_stock = AllController()
+
     """
         dayly
     """

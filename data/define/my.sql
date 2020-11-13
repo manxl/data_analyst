@@ -24,3 +24,30 @@ where
 	and i.debt_to_assets < 50
 order by
 	m.pe_ttm asc;
+
+
+
+
+
+select
+	b.y,b.total_hldr_eqy_inc_min_int as e,
+	i.n_income as r,
+	i.n_income /total_hldr_eqy_exc_min_int roe,
+from
+	balancesheet b,income i , fina_indicator f
+where 1=1
+	and b.ts_code = i.ts_code and i.ts_code = f.ts_code
+	and b.y = i.y and i.y = f.y
+	and b.m = i.m and i.m = f.m
+	and b.ts_code = '601398.SH' and b.y between 2006 and 2010 and b.m = 12
+	order by b.y asc;
+
+
+select
+	y,
+	cash_div,cash_div_tax,
+	cash_div*base_share,cash_div_tax*base_share
+from
+	dividend
+	where ts_code = '601398.SH' and y between 2006 and 2010
+order by y asc;

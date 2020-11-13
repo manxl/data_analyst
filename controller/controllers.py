@@ -37,7 +37,6 @@ class BaseController:
         else:
             # exit(4)
             logging.debug('{} {} is not need process'.format(self.biz_code, self.interface))
-            pass
 
     def is_need_process(self):
         if self.his is None:
@@ -289,7 +288,10 @@ class FinaBaseController(BaseController):
             handler = Dividend(self.biz_code, his)
         else:
             raise Exception('unsuppurt interface {}'.format(self.interface))
-        handler.process()
+        try:
+            handler.process()
+        except Exception as e:
+            logging.error(e)
 
 
 class IncomeController(FinaBaseController):
@@ -323,7 +325,9 @@ class OneFinaController(MultiCtlController):
 
     def _delete_ts(self):
         for target in self._targets:
-            FinaBaseController(target, biz_code=self.biz_code).delete()
+            ctl = FinaBaseController(target, biz_code=self.biz_code)
+            if ctl.his is not None:
+                ctl.delete()
 
     def get_biz_data(self):
         sub_ctls = []
@@ -370,12 +374,26 @@ class AllController(MultiCtlController):
         for ts_code in self._get_con_codes():
             OneFinaController(ts_code).process()
 
+    def delete(self):
+        sqls = """delete from his where TABLE_name in ('balancesheet','income','cashflow','fina_indicator','dividend','one_fina','one_index','all');
+truncate table balancesheet;
+truncate table income;
+truncate table cashflow;
+truncate table fina_indicator;
+truncate table dividend;
+truncate table dividend_stat;""".split('\n')
+        for sql in sqls:
+            get_engine().execute(sql)
+
     def _delete_ts(self):
         for ts_code in self._get_con_codes():
             OneFinaController(ts_code).delete()
+            ctl = OneFinaController(ts_code).delete()
+            if ctl.his is not None:
+                ctl.delete()
 
     def _get_con_codes(self):
-        sql = """select * from stock_basic"""
+        sql = """select * from stock_basic  ;"""        # where ts_code = '300519.SZ'
 
         df = pd.read_sql_query(sql, get_engine())
 
@@ -387,6 +405,44 @@ class AllController(MultiCtlController):
         for ts_code in con_codes:
             sub_ctls.append(OneFinaController(ts_code))
         return sub_ctls
+
+
+class DailyBasicMonthController(BaseController):
+
+    def __init__(self):
+        super().__init__('daily_basic_month', CTL_CYCLE_DAY, CTL_OPERATE_TRUNCATE)
+
+    # def _get_table_name__(self):
+    #     return self.interface + "_month"
+
+    def _init_ts(self):
+        self._update_ts()
+
+    def _update_ts(self):
+        sql = 'select * from trade_date where m != 0 ;'
+        yms = pd.read_sql_query(sql, get_engine())
+
+        df = None
+        for i, row in yms.iterrows():
+            first_trade_date_str = row['first'].strftime('%Y%m%d')
+            last_last_date_str = row['last'].strftime('%Y%m%d')
+            data = get_pro().daily_basic(ts_code='', trade_date=last_last_date_str)
+            print(last_last_date_str)
+            if df is None:
+                df = data
+            else:
+                df = df.append(data)
+        df_add_y_m(df, 'trade_date')
+        df.reset_index(drop=True)
+        df = df.iloc[::-1]
+        dtype = {'ts_code': VARCHAR(length=10), 'trade_date': DATE(), 'close': FLOAT(),
+                 'y': INT(), 'm': INT(),
+                 'turnover_rate': FLOAT(), 'turnover_rate_f': FLOAT(), 'volume_ratio': FLOAT(),
+                 'pe': FLOAT(), 'pe_ttm': FLOAT(), 'pb': FLOAT(),
+                 'ps': FLOAT(), 'ps_ttm': FLOAT(), 'dv_ratio': FLOAT(),
+                 'dv_ttm': FLOAT(), 'total_share': FLOAT(), 'float_share': FLOAT(),
+                 'free_share': FLOAT(), 'total_mv': FLOAT(), 'circ_mv': FLOAT()}
+        df.to_sql(self.get_table_name(), get_engine(), dtype=dtype, index=False, if_exists='replace')
 
 
 class DailyBasicController(BaseController):
