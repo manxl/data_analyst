@@ -9,6 +9,7 @@
         table tr td {
             border: 1px solid #0094ff;
         }
+
         {##}
         {#table {#}
         {#    width: 200px;#}
@@ -17,173 +18,174 @@
         {#    text-align: center;#}
         {#    border-collapse: collapse;#}
         {#    padding: 2px;#}
-        {#}#}
+        {
+        #}#}
     </style>
 </head>
 <body>
-    <table>
-        <tr>
-            <th>Table</th>
-            <th width="150px" >Ctl</th>
-            <th width="200px" >biz_code</th>
-            <th width="200px">his</th>
-            <th>operation</th>
-            <th>delete</th>
-        </tr>
-        <tr>
-            <td>stock_basic</td>
-            <td>
-                {{ stock_basic_ctl.cyc }}|{{ stock_basic_ctl.operate }}|
-            </td>
-            <td></td>
-            <td>{{ stock_basic_ctl.his }}</td>
-            <td>
-                {% if stock_basic_ctl.is_need_process()  %}
-                    <a href="/{{ stock_basic_ctl.get_table_name() }}/process">{{ stock_basic_ctl.is_need_process() }}</a>
-                {% endif %}
-            </td>
-            <th>
-                {% if stock_basic_ctl.his  %}
-                    <a href="/{{ stock_basic_ctl.get_table_name() }}/delete">delete</a>
-                {% endif %}
-            </th>
-        </tr>
+<table>
+    <tr>
+        <th>Table</th>
+        <th width="150px">Ctl</th>
+        <th width="200px">biz_code</th>
+        <th width="200px">his</th>
+        <th>operation</th>
+        <th>delete</th>
+    </tr>
+    <tr>
+        <td>stock_basic</td>
+        <td>
+            {{ stock_basic_ctl.cyc }}|{{ stock_basic_ctl.operate }}|
+        </td>
+        <td></td>
+        <td>{{ stock_basic_ctl.his }}</td>
+        <td>
+            {% if stock_basic_ctl.is_need_process() %}
+                <a href="/{{ stock_basic_ctl.get_table_name() }}/process">{{ stock_basic_ctl.is_need_process() }}</a>
+            {% endif %}
+        </td>
+        <th>
+            {% if stock_basic_ctl.his %}
+                <a href="/{{ stock_basic_ctl.get_table_name() }}/delete">delete</a>
+            {% endif %}
+        </th>
+    </tr>
 
 
-        <tr>
-            <td>trade_cal</td>
-            <td>
-                {{ trade_cal_ctl.cyc }}|{{ trade_cal_ctl.operate }}|
-            </td>
-            <td></td>
-            <td>{{ trade_cal_ctl.his }}</td>
+    <tr>
+        <td>trade_cal</td>
+        <td>
+            {{ trade_cal_ctl.cyc }}|{{ trade_cal_ctl.operate }}|
+        </td>
+        <td></td>
+        <td>{{ trade_cal_ctl.his }}</td>
 
-            <td>
-                {% if trade_cal_ctl.is_need_process()  %}
-                    <a href="/{{ trade_cal_ctl.get_table_name() }}/process">{{ trade_cal_ctl.is_need_process() }}</a>
-                {% endif %}
-            </td>
-            <th>
-                {% if trade_cal_ctl.his  %}
-                    <a href="/{{ trade_cal_ctl.get_table_name() }}/delete">delete</a>
-                {% endif %}
-            </th>
-        </tr>
+        <td>
+            {% if trade_cal_ctl.is_need_process() %}
+                <a href="/{{ trade_cal_ctl.get_table_name() }}/process">{{ trade_cal_ctl.is_need_process() }}</a>
+            {% endif %}
+        </td>
+        <th>
+            {% if trade_cal_ctl.his %}
+                <a href="/{{ trade_cal_ctl.get_table_name() }}/delete">delete</a>
+            {% endif %}
+        </th>
+    </tr>
 
-        <tr>
-            <td>Daily Basic Month</td>
-            <td>
-                {{ daily_basic_month_ctl.cyc }}|{{ daily_basic_month_ctl.operate }}|
-            </td>
-            <td></td>
-            <td>{{ daily_basic_month_ctl.his }}</td>
+    <tr>
+        <td>Daily Basic Month</td>
+        <td>
+            {{ daily_basic_month_ctl.cyc }}|{{ daily_basic_month_ctl.operate }}|
+        </td>
+        <td></td>
+        <td>{{ daily_basic_month_ctl.his }}</td>
 
-            <td>
-                {% if daily_basic_month_ctl.is_need_process()  %}
-                    <a href="/{{ daily_basic_month_ctl.get_table_name() }}/process">{{ daily_basic_month_ctl.is_need_process() }}</a>
-                {% endif %}
-            </td>
-            <th>
-                {% if daily_basic_month_ctl.his  %}
-                    <a href="/{{ daily_basic_month_ctl.get_table_name() }}/delete">delete</a>
-                {% endif %}
-            </th>
-        </tr>
+        <td>
+            {% if daily_basic_month_ctl.is_need_process() %}
+                <a href="/{{ daily_basic_month_ctl.get_table_name() }}/process">{{ daily_basic_month_ctl.is_need_process() }}</a>
+            {% endif %}
+        </td>
+        <td>
+            {% if daily_basic_month_ctl.his %}
+                <a href="/{{ daily_basic_month_ctl.get_table_name() }}/delete">delete</a>
+            {% endif %}
+        </td>
+    </tr>
 
-        <tr>
-            <td>Daily Basic</td>
-            <td>
-                {{ daily_basic_ctl.cyc }}|{{ daily_basic_ctl.operate }}|
-            </td>
-            <td></td>
-            <td>{{ daily_basic_ctl.his }}</td>
+    <tr>
+        <td>Daily Basic</td>
+        <td>
+            {{ daily_basic_ctl.cyc }}|{{ daily_basic_ctl.operate }}|
+        </td>
+        <td></td>
+        <td>{{ daily_basic_ctl.his }}</td>
 
-            <td>
-                {% if trade_cal_flag  %}
-                    <a href="/{{ daily_basic_ctl.get_table_name() }}/process">{{ trade_cal_flag }}</a>
-                {% endif %}
-            </td>
-            <th>
-                {% if daily_basic_ctl.his  %}
-                    <a href="/{{ daily_basic_ctl.get_table_name() }}/delete">delete</a>
-                {% endif %}
-            </th>
-        </tr>
+        <td>
+            {% if daily_basic_ctl.is_need_process() %}
+                <a href="/{{ daily_basic_ctl.get_table_name() }}/process">{{ daily_basic_ctl.is_need_process() }}</a>
+            {% endif %}
+        </td>
+        <th>
+            {% if daily_basic_ctl.his %}
+                <a href="/{{ daily_basic_ctl.get_table_name() }}/delete">delete</a>
+            {% endif %}
+        </th>
+    </tr>
 
-        <tr>
-            <td rowspan="2">index_weight</td>
-            <td>
-                {{ index_weight_ctl_510310.cyc }}|{{ index_weight_ctl_510310.operate }}|
-            </td>
-            <td>{{ index_weight_ctl_510310.biz_code }}</td>
-            <td>{{ index_weight_ctl_510310.his }}</td>
-            <td>
-                {% if index_weight_flag_510310  %}
-                    <a href="/{{ index_weight_ctl_510310.get_table_name() }}/{{ index_weight_ctl_510310.biz_code }}/process">{{ index_weight_flag_510310 }}</a>
-                {% endif %}
-            </td>
-            <th>
-                {% if index_weight_ctl_510310.his  %}
-                    <a href="/{{ index_weight_ctl_510310.get_table_name() }}/{{ index_weight_ctl_510310.biz_code }}/delete">delete</a>
-                {% endif %}
-            </th>
-        </tr>
-        <tr>
-            <td>
-                {{ index_weight_ctl_000016.cyc }}|{{ index_weight_ctl_000016.operate }}|
-            </td>
-            <td>{{ index_weight_ctl_000016.biz_code }}</td>
-            <td>{{ index_weight_ctl_000016.his }}</td>
-            <td>
-                {% if index_weight_flag_000016  %}
-                    <a href="/{{ index_weight_ctl_000016.get_table_name() }}/{{ index_weight_ctl_000016.biz_code }}/process">{{ index_weight_flag_000016 }}</a>
-                {% endif %}
-            </td>
-            <th>
-                {% if index_weight_ctl_000016.his  %}
-                    <a href="/{{ index_weight_ctl_000016.get_table_name() }}/{{ index_weight_ctl_000016.biz_code }}/delete">delete</a>
-                {% endif %}
-            </th>
-        </tr>
+    <tr>
+        <td rowspan="2">index_weight</td>
+        <td>
+            {{ index_weight_ctl_510310.cyc }}|{{ index_weight_ctl_510310.operate }}|
+        </td>
+        <td>{{ index_weight_ctl_510310.biz_code }}</td>
+        <td>{{ index_weight_ctl_510310.his }}</td>
+        <td>
+            {% if index_weight_ctl_510310.is_need_process() %}
+                <a href="/{{ index_weight_ctl_510310.get_table_name() }}/{{ index_weight_ctl_510310.biz_code }}/process">{{ index_weight_ctl_510310.is_need_process() }}</a>
+            {% endif %}
+        </td>
+        <th>
+            {% if index_weight_ctl_510310.his %}
+                <a href="/{{ index_weight_ctl_510310.get_table_name() }}/{{ index_weight_ctl_510310.biz_code }}/delete">delete</a>
+            {% endif %}
+        </th>
+    </tr>
+    <tr>
+        <td>
+            {{ index_weight_ctl_000016.cyc }}|{{ index_weight_ctl_000016.operate }}|
+        </td>
+        <td>{{ index_weight_ctl_000016.biz_code }}</td>
+        <td>{{ index_weight_ctl_000016.his }}</td>
+        <td>
+            {% if index_weight_ctl_000016.is_need_process() %}
+                <a href="/{{ index_weight_ctl_000016.get_table_name() }}/{{ index_weight_ctl_000016.biz_code }}/process">{{ index_weight_ctl_000016.is_need_process() }}</a>
+            {% endif %}
+        </td>
+        <th>
+            {% if index_weight_ctl_000016.his %}
+                <a href="/{{ index_weight_ctl_000016.get_table_name() }}/{{ index_weight_ctl_000016.biz_code }}/delete">delete</a>
+            {% endif %}
+        </th>
+    </tr>
 
-        <tr>
-            <td rowspan="2">finanace</td>
-            <td>
-                {{ income.cyc }}|{{ income.operate }}|
-            </td>
-            <td>{{ income.biz_code }}</td>
-            <td>{{ income.his }}</td>
-            <td>
-                {% if income.is_need_process()  %}
-                    <a href="/{{ income.get_table_name() }}/{{ income.biz_code }}/process">{{ income.is_need_process() }}</a>
-                {% endif %}
-            </td>
-            <th>
-                {% if income.his  %}
-                    <a href="/{{ income.get_table_name() }}/{{ income.biz_code }}/delete">delete</a>
-                {% endif %}
-            </th>
-        </tr>
-        <tr>
+    <tr>
+        <td rowspan="2">finanace</td>
+        <td>
+            {{ income.cyc }}|{{ income.operate }}|
+        </td>
+        <td>{{ income.biz_code }}</td>
+        <td>{{ income.his }}</td>
+        <td>
+            {% if income.is_need_process() %}
+                <a href="/{{ income.get_table_name() }}/{{ income.biz_code }}/process">{{ income.is_need_process() }}</a>
+            {% endif %}
+        </td>
+        <th>
+            {% if income.his %}
+                <a href="/{{ income.get_table_name() }}/{{ income.biz_code }}/delete">delete</a>
+            {% endif %}
+        </th>
+    </tr>
+    <tr>
 
-            <td>
-                {{ dividend.cyc }}|{{ dividend.operate }}|
-            </td>
-            <td>{{ dividend.biz_code }}</td>
-            <td>{{ dividend.his }}</td>
-            <td>
-                {% if dividend.is_need_process()  %}
-                    <a href="/fina/{{ dividend.get_table_name() }}/{{ dividend.biz_code }}/process">{{ dividend.is_need_process() }}</a>
-                {% endif %}
-            </td>
-            <th>
-                {% if dividend.his  %}
-                    <a href="/fina/{{ dividend.get_table_name() }}/{{ dividend.biz_code }}/delete">delete</a>
-                {% endif %}
-            </th>
-        </tr>
+        <td>
+            {{ dividend.cyc }}|{{ dividend.operate }}|
+        </td>
+        <td>{{ dividend.biz_code }}</td>
+        <td>{{ dividend.his }}</td>
+        <td>
+            {% if dividend.is_need_process() %}
+                <a href="/fina/{{ dividend.get_table_name() }}/{{ dividend.biz_code }}/process">{{ dividend.is_need_process() }}</a>
+            {% endif %}
+        </td>
+        <th>
+            {% if dividend.his %}
+                <a href="/fina/{{ dividend.get_table_name() }}/{{ dividend.biz_code }}/delete">delete</a>
+            {% endif %}
+        </th>
+    </tr>
 
-        {% for ctl in one_ctls %}
+    {% for ctl in one_ctls %}
         <tr>
             {% if ctl.interface == 'balancesheet' %}
                 <td rowspan="{{ one_ctls.__len__() }}">
@@ -204,113 +206,91 @@
             {% endif %}
             <td>{{ ctl.his }}</td>
             <td>
-                {% if ctl.is_need_process()  %}
+                {% if ctl.is_need_process() %}
                     <a href="/fina/{{ ctl.interface }}/{{ ctl.biz_code }}/process">{{ ctl.is_need_process() }}</a>
                 {% endif %}
             </td>
             <th>
-                {% if ctl.his  %}
+                {% if ctl.his %}
                     <a href="/fina/{{ ctl.interface }}/{{ ctl.biz_code }}/delete">delete</a>
                 {% endif %}
             </th>
         </tr>
-        {% endfor %}
+    {% endfor %}
 
-        <tr>
-            <td>
-                One TS CODE
-            </td>
-            <td>
-                {{ one_fina.cyc }}|{{ one_fina.operate }}|
-            </td>
-            <td>{{ one_fina.biz_code }}</td>
-            <td>{{ one_fina.his }}</td>
-            <td>
-                {% if one_fina.is_need_process()  %}
-                    <a href="/one_fina/{{ one_fina.biz_code }}/process">{{ one_fina.is_need_process() }}</a>
-                {% endif %}
-            </td>
-            <th>
-                {% if one_fina.his  %}
-                    <a href="/one_fina/{{ one_fina.biz_code }}/delete">delete</a>
-                {% endif %}
-            </th>
-        </tr>
+    <tr>
+        <td>
+            One TS CODE
+        </td>
+        <td>
+            {{ one_fina.cyc }}|{{ one_fina.operate }}|
+        </td>
+        <td>{{ one_fina.biz_code }}</td>
+        <td>{{ one_fina.his }}</td>
+        <td>
+            {% if one_fina.is_need_process() %}
+                <a href="/one_fina/{{ one_fina.biz_code }}/process">{{ one_fina.is_need_process() }}</a>
+            {% endif %}
+        </td>
+        <th>
+            {% if one_fina.his %}
+                <a href="/one_fina/{{ one_fina.biz_code }}/delete">delete</a>
+            {% endif %}
+        </th>
+    </tr>
 
-        <tr>
-            <td>
-                One Index Code
-                <form action="/set/session" method="post">
-                    <input type="input" name="index_code"/>
-                    <input type="submit" value="submit"/>
-                </form>
-            </td>
-            <td>
-                {{ one_index.cyc }}|{{ one_index.operate }}|
-            </td>
-            <td>
-                <a href="/one_index/{{ one_index.biz_code }}/view">{{ one_index.biz_code }}</a>
-            </td>
-            <td>{{ one_index.his }}</td>
-            <td>
-                {% if one_index.is_need_process()  %}
-                    <a href="/one_index/{{ one_index.biz_code }}/process">{{ one_index.is_need_process() }}</a>
-                {% endif %}
-            </td>
-            <th>
-                {% if one_index.his  %}
-                    <a href="/one_index/{{ one_index.biz_code }}/delete">delete</a>
-                {% endif %}
-            </th>
-        </tr>
+    <tr>
+        <td>
+            One Index Code
+            <form action="/set/session" method="post">
+                <input type="input" name="index_code"/>
+                <input type="submit" value="submit"/>
+            </form>
+        </td>
+        <td>
+            {{ one_index.cyc }}|{{ one_index.operate }}|
+        </td>
+        <td>
+            <a href="/one_index/{{ one_index.biz_code }}/view">{{ one_index.biz_code }}</a>
+        </td>
+        <td>{{ one_index.his }}</td>
+        <td>
+            {% if one_index.is_need_process() %}
+                <a href="/one_index/{{ one_index.biz_code }}/process">{{ one_index.is_need_process() }}</a>
+            {% endif %}
+        </td>
+        <th>
+            {% if one_index.his %}
+                <a href="/one_index/{{ one_index.biz_code }}/delete">delete</a>
+            {% endif %}
+        </th>
+    </tr>
 
-        <tr>
-            <td>
-                ALL
-            </td>
-            <td>
-                {{ all_stock.cyc }}|{{ all_stock.operate }}|
-            </td>
-            <td>
-                <a href="/all_stock/{{ all_stock.biz_code }}/view">{{ all_stock.biz_code }}</a>
-            </td>
-            <td>{{ all_stock.his }}</td>
-            <td>
-                {% if all_stock.is_need_process()  %}
-                    <a href="/all_stock/process">{{ all_stock.is_need_process() }}</a>
-                {% endif %}
-            </td>
-            <th>
-                {% if all_stock.his  %}
-                    <a href="/all_stock/delete">delete</a>
-                {% endif %}
-            </th>
-        </tr>
+    <tr>
+        <td>
+            ALL
+        </td>
+        <td>
+            {{ all_stock.cyc }}|{{ all_stock.operate }}|
+        </td>
+        <td>
+            <a href="/all_stock/{{ all_stock.biz_code }}/view">{{ all_stock.biz_code }}</a>
+        </td>
+        <td>{{ all_stock.his }}</td>
+        <td>
+            {% if all_stock.is_need_process() %}
+                <a href="/all_stock/process">{{ all_stock.is_need_process() }}</a>
+            {% endif %}
+        </td>
+        <th>
+            {% if all_stock.his %}
+                <a href="/all_stock/delete">delete</a>
+            {% endif %}
+        </th>
+    </tr>
 
-        <tr>
-            <td>
-                Dialy Basic
-            </td>
-            <td>
-                {{ daily_basic.cyc }}|{{ daily_basic.operate }}|
-            </td>
-            <td>
 
-            </td>
-            <td>{{ daily_basic.his }}</td>
-            <td>
-                {% if daily_basic.is_need_process()  %}
-                    <a href="/daily/process">{{ daily_basic.is_need_process() }}</a>
-                {% endif %}
-            </td>
-            <th>
-                {% if daily_basic.his  %}
-                    <a href="/daily/delete">delete</a>
-                {% endif %}
-            </th>
-        </tr>
-    </table>
-
+</table>
 
 
 </body>

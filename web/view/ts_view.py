@@ -237,6 +237,7 @@ def root():
     trade_cal_ctl = TradeCalController()
 
     daily_basic_month_ctl = DailyBasicMonthController()
+
     daily_basic_ctl = DailyBasicController()
 
     index_code = '399300.SZ'
@@ -275,7 +276,6 @@ def root():
         dayly
     """
 
-    daily_basic = DailyBasicController()
 
     return render_template('main.html', **locals())
     # return render_template('main.html', stock_basic_ctl=stock_basic_ctl, stock_basic_his=stock_basic_his)

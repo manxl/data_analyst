@@ -26,7 +26,7 @@ def get_dividend(ts_code, start, end):
 
 
 def get_trade_date(y, m):
-    sql = '''select * from trade_date where y ={} and m = {};'''
+    sql = '''select * from trade_cal where y ={} and m = {};'''
     sql = sql.format(y, m)
     df = pd.read_sql_query(sql, get_engine())
     first = None if len(df) == 0 else df['first'][0]
