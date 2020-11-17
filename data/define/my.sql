@@ -51,3 +51,23 @@ from
 	dividend
 	where ts_code = '601398.SH' and y between 2006 and 2010
 order by y asc;
+
+
+
+
+select
+	m.ts_code,m.`close`,m.pe,m.pe_ttm,
+	d.close,d.pe as dp,d.pe_ttm as dpt,
+	d.pe/m.pe,d.pe_ttm/m.pe_ttm,d.`close`/m.`close`
+from
+	daily_basic d,daily_basic_month m,stock_basic s,index_weight idx
+WHERE
+	d.ts_code = s.ts_code and d.ts_code = m .ts_code and d.ts_code = idx.con_code
+	and m.y= 2018 and m.m = 6
+	and idx.index_code = 'tangchao';
+
+
+select d.* from dividend d,index_weight i
+where d.ts_code = i.con_code
+and i.index_code = 'tangchao'
+and d.y >= 2018;

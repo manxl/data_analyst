@@ -15,6 +15,7 @@ from conf.config import *
 
 
 class BaseController:
+
     def __init__(self, interface, cyc, operate, biz_code=None, biz_col_name=None, calc_table=None):
         logging.debug('Init Controller {}'.format(self.__class__))
         self.interface = interface
@@ -25,6 +26,12 @@ class BaseController:
         self.his = None
         self.calc_table = calc_table
         self.load_his()
+        self.regedit()
+
+    def regedit(self):
+        if self.interface in CTL_INTERFACE_CLASS_MAPPING:
+            return
+        CTL_INTERFACE_CLASS_MAPPING[self.interface] = self.__class__
 
     def get_table_name(self):
         return self.interface
@@ -258,6 +265,35 @@ class IndexWeightController(BaseController):
         df.to_sql(self.get_table_name(), get_engine(), dtype=dtype, index=False, if_exists='append')
 
 
+class MyIndexController(BaseController):
+
+    def __init__(self, biz_code):
+        super().__init__('my_index', CTL_CYCLE_MONTH, CTL_OPERATE_APPEND, biz_code=biz_code, biz_col_name='index_code')
+
+    def get_table_name(self):
+        return 'index_weight'
+
+    def _update_ts(self):
+        self._delete_ts()
+        self._init_ts()
+
+    def _init_ts(self):
+        pass
+        if self.biz_code == 'tangchao':
+            con_codes = '600519.SH,002304.SZ,002415.SZ,002027.SZ,000596.SZ'.split(',')
+        elif self.biz_code == 'manxl':
+            con_codes = '600519.SH,002304.SZ,002415.SZ,002027.SZ,000596.SZ'.split(',')
+
+        sql_template = "INSERT INTO index_weight VALUES ('{}', '{}', {}, {}, '{}-{}-31', 0 );"
+
+        sqls = []
+        for con_code in con_codes:
+            sqls.append(sql_template.format(self.biz_code, con_code, 2020, 12, 2020, 12))
+
+        for sql in sqls:
+            get_engine().execute(sql)
+
+
 class FinaBaseController(BaseController):
 
     def __init__(self, table, biz_code):
@@ -393,7 +429,7 @@ truncate table dividend_stat;""".split('\n')
                 ctl.delete()
 
     def _get_con_codes(self):
-        sql = """select * from stock_basic  ;"""        # where ts_code = '300519.SZ'
+        sql = """select * from stock_basic  ;"""  # where ts_code = '300519.SZ'
 
         df = pd.read_sql_query(sql, get_engine())
 

@@ -61,3 +61,14 @@ INSERT INTO `liability` VALUES ('28', '2017', '4.200000');
 INSERT INTO `liability` VALUES ('29', '2018', '4.270000');
 INSERT INTO `liability` VALUES ('30', '2019', '4.270000');
 INSERT INTO `liability` VALUES ('31', '2020', '3.970000');
+
+
+
+
+INSERT INTO `index_weight`
+(`index_code`, `con_code`, `y`, `m`, `trade_date`, `weight`) VALUES
+('tangchao', '600519.SH', '2019', '12', '2019-12-31', '2.425000'),
+('tangchao', '002304.SZ', '2019', '12', '2019-12-31', '2.425000'),
+('tangchao', '002415.SZ', '2019', '12', '2019-12-31', '2.425000'),
+('tangchao', '002027.SZ', '2019', '12', '2019-12-31', '2.425000'),
+('tangchao', '000596.SZ', '2019', '12', '2019-12-31', '2.425000');

@@ -148,6 +148,7 @@
         </th>
     </tr>
 
+
     <tr>
         <td rowspan="2">finanace</td>
         <td>
@@ -190,10 +191,7 @@
             {% if ctl.interface == 'balancesheet' %}
                 <td rowspan="{{ one_ctls.__len__() }}">
                     One Con Code
-                    <form action="/set/session" method="post">
-                        <input type="input" name="ts_code"/>
-                        <input type="submit" value="submit"/>
-                    </form>
+
                 </td>
             {% endif %}
             <td>

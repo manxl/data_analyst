@@ -65,6 +65,18 @@ def index_weight_process(index_code):
     return r()
 
 
+@main.route('/my_index/<index_code>/<operate>', methods=['GET'])
+def my_index(index_code, operate):
+    ctl = MyIndexController(index_code)
+    if 'process' == operate:
+        ctl.process()
+    elif 'delete' == operate:
+        ctl.delete()
+    else:
+        raise Exception('Unsupported type {}', operate)
+    return r()
+
+
 @main.route('/daily_basic_month/<operate>', methods=['GET'])
 def daily_basic_month(operate):
     if 'process' == operate:
@@ -228,8 +240,30 @@ def daily(operate):
 
 
 ####################################################
-@main.route('/')
-def root():
+@main.route('/ctl/<interface>/<biz_code>/<operate>', methods=['GET'])
+def ctl_operate(interface, biz_code, operate):
+    clz = CTL_INTERFACE_CLASS_MAPPING[interface]
+    if not clz:
+        raise Exception('errer type flag')
+    module = __import__(clz.__module__, fromlist=True)
+    contructor = getattr(module, clz.__name__)
+
+    if biz_code:
+        ctl = contructor(biz_code)
+    else:
+        ctl = contructor()
+
+    if 'process' == operate:
+        ctl.process()
+    elif 'delete' == operate:
+        ctl.delete()
+    else:
+        raise Exception('Unsupported type {}', operate)
+    return r()
+
+
+@main.route('/123')
+def root123():
     """
         basic meta
     """
@@ -245,6 +279,11 @@ def root():
 
     index_code = '000016.SH'
     index_weight_ctl_000016 = IndexWeightController(index_code)
+
+    idx_tangchao_1 = MyIndexController('tangchao')
+    idx_manxl = MyIndexController('manxl')
+
+    kk = ['abc']
 
     """
         stock finance
@@ -276,15 +315,66 @@ def root():
         dayly
     """
 
+    # t = type
+    # l = list
 
     return render_template('main.html', **locals())
     # return render_template('main.html', stock_basic_ctl=stock_basic_ctl, stock_basic_his=stock_basic_his)
 
 
+@main.route('/')
+def root():
+    ctls = {}
+
+    ctls['Basic'] = StockBasicController()
+    ctls['Trade Cal'] = TradeCalController()
+
+    ctls['daily_basic_month'] = DailyBasicMonthController()
+    ctls['daily_basic'] = DailyBasicController()
+
+    # my index
+    my_index_list = []
+    ctls['My Indexes'] = my_index_list
+    my_index_list.append(MyIndexController('tangchao'))
+    my_index_list.append(MyIndexController('manxl'))
+
+    # index
+    index_list = []
+    ctls['Indexes'] = my_index_list
+    index_list.append(IndexWeightController('399300.SZ'))
+    index_list.append(IndexWeightController('000016.SH'))
+
+    """
+        stock finance
+    """
+    if 'ts_code' not in session:
+        ts_code = TEST_TS_CODE_ZGPA
+    else:
+        ts_code = session['ts_code']
+    ctls['Income'] = IncomeController(ts_code)
+    ctls['Dividend'] = FinaBaseController('dividend', ts_code)
+
+    one_ctls = []
+    for n in 'balancesheet,income,cashflow,fina_indicator,dividend'.split(','):
+        one_ctls.append(FinaBaseController(n, ts_code))
+    ctls['One Con Code'] = one_ctls
+
+    ctls['One Fina Code'] = OneFinaController(ts_code)
+
+    if 'index_code' not in session:
+        index_code = TEST_INDEX_CODE_SZ50
+    else:
+        index_code = session['index_code']
+
+    ctls['One Index Code'] = OneIndexController(index_code)
+    ctls['All'] = AllController()
+
+    return render_template('index.html', ctls=ctls)
+
+
 @main.route('/test')
 def i_test():
     return r()
-
 
 def r():
     return redirect(url_for('ts.root'))

@@ -1,9 +1,10 @@
 import pandas as pd
-from dao.db_pool import get_engine,get_pro
+from dao.db_pool import get_engine, get_pro
 import datetime
 from dao.db_pool import get_pro
 from tools.utils import df_add_y_m
 from sqlalchemy.types import VARCHAR, DATE, INT, Float, DECIMAL, Integer, FLOAT
+
 
 class C:
     def __init__(self, code, kk):
@@ -50,5 +51,29 @@ def init_month_matrix_basic():
              'free_share': FLOAT(), 'total_mv': FLOAT(), 'circ_mv': FLOAT()}
     df.to_sql(table_name, get_engine(), dtype=dtype, index=False, if_exists='append')
 
-if __name__ == '__main__':
+
+if __name__ == '__main__——':
     init_month_matrix_basic()
+
+
+def create_obj():
+    from controller.controllers import MyIndexController, BaseController
+    k = type('MyIndexController',(BaseController,),{'biz_code':'tangchao'})
+    import sys
+    module_name = 'controller.controllers'
+    module = __import__(module_name, fromlist=True)
+    clz = getattr(module, 'MyIndexController')
+    ctl = clz('tangchao')
+    t = ctl.get_table_name()
+    print(t)
+
+class ABBBB():
+    def __index__(self):
+        pass
+
+if __name__ == '__main__':
+    # create_obj()
+    a = ABBBB()
+    k = []
+    print(type(a) == list)
+    print(type(k) == list)

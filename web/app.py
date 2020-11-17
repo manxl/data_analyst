@@ -28,6 +28,10 @@ def __init():
     from web.view.demo_view import demo
     app.register_blueprint(demo, url_prefix='/demo')
 
+    app.add_template_global(type,"type")
+    app.add_template_global(len,"len")
+    app.add_template_global(list,"list")
+
     return app
 
 
