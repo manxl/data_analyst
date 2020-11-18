@@ -205,7 +205,7 @@ class TradeCalController(BaseController):
         r2['m'] = pd.Series(np.zeros(len(r2)), index=r2.index)
 
         r = r1.append(r2, ignore_index=True)
-        r = r.reindex(columns=['y', 'm', 'first', 'last'])
+        r = r.data(columns=['y', 'm', 'first', 'last'])
         r.to_sql(self.get_table_name(), get_engine(),
                  index=False,
                  dtype={'first': DATE(), 'last': DATE(), 'y': Integer(), 'm': INT()}

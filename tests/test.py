@@ -4,6 +4,7 @@ import datetime
 from dao.db_pool import get_pro
 from tools.utils import df_add_y_m
 from sqlalchemy.types import VARCHAR, DATE, INT, Float, DECIMAL, Integer, FLOAT
+import matplotlib.pyplot as plt
 
 
 class C:
@@ -52,28 +53,7 @@ def init_month_matrix_basic():
     df.to_sql(table_name, get_engine(), dtype=dtype, index=False, if_exists='append')
 
 
-if __name__ == '__main__——':
-    init_month_matrix_basic()
-
-
-def create_obj():
-    from controller.controllers import MyIndexController, BaseController
-    k = type('MyIndexController',(BaseController,),{'biz_code':'tangchao'})
-    import sys
-    module_name = 'controller.controllers'
-    module = __import__(module_name, fromlist=True)
-    clz = getattr(module, 'MyIndexController')
-    ctl = clz('tangchao')
-    t = ctl.get_table_name()
-    print(t)
-
-class ABBBB():
-    def __index__(self):
-        pass
-
 if __name__ == '__main__':
-    # create_obj()
-    a = ABBBB()
-    k = []
-    print(type(a) == list)
-    print(type(k) == list)
+    s = 'D:\workspaces\python\2020\data_analyst/web/static/temp/ts_code1605703718.5151498.png'
+    print(s.find('/web/'))
+    print(s[s.find('/web/') + 4:])

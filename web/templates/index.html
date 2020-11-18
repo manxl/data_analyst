@@ -50,7 +50,13 @@
             <td>
                 {{ data.cyc }}|{{ data.operate }}|
             </td>
-            <td>{{ data.biz_code }}</td>
+            <td>
+                {% if  data.__class__.__name__ == 'OneIndexController' %}
+                    <a href="/ctl/{{ data.interface }}/{{ data.biz_code }}/view">{{ data.biz_code }}</a>
+                {% else %}
+                    {{ data.biz_code }}
+                {% endif %}
+            </td>
             <td>{{ data.his }}</td>
             <td>
                 {% if data.is_need_process() %}

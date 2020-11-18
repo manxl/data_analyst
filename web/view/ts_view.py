@@ -16,7 +16,7 @@ def reload_income():
 
 @main.route('/ml')
 def test_graph122():
-    df = pd.read_sql_query("select * from stock_balancesheet where ts_code = '000001.SZ' and m = 12;",
+    df = pd.read_sql_query("select * from balancesheet where ts_code = '000001.SZ' and m = 12;",
                            get_engine())
 
     mp.plot(df['end_date'], df['total_cur_assets'], label='123')
@@ -30,141 +30,6 @@ def test_graph122():
 """
 
 
-@main.route('/stock_basic/process', methods=['GET'])
-def stock_basic_process():
-    stock_basic_ctl = StockBasicController()
-    stock_basic_ctl.process()
-    return r()
-
-
-@main.route('/stock_basic/delete', methods=['GET'])
-def stock_basic_delete():
-    stock_basic_ctl = StockBasicController()
-    stock_basic_ctl.delete()
-    return r()
-
-
-@main.route('/trade_cal/process', methods=['GET'])
-def trade_cal_process():
-    stock_basic_ctl = TradeCalController()
-    stock_basic_ctl.process()
-    return r()
-
-
-@main.route('/trade_cal/delete', methods=['GET'])
-def trade_cal_delete():
-    stock_basic_ctl = TradeCalController()
-    stock_basic_ctl.delete()
-    return r()
-
-
-@main.route('/index_weight/<index_code>/process', methods=['GET'])
-def index_weight_process(index_code):
-    stock_basic_ctl = IndexWeightController(index_code)
-    stock_basic_ctl.process()
-    return r()
-
-
-@main.route('/my_index/<index_code>/<operate>', methods=['GET'])
-def my_index(index_code, operate):
-    ctl = MyIndexController(index_code)
-    if 'process' == operate:
-        ctl.process()
-    elif 'delete' == operate:
-        ctl.delete()
-    else:
-        raise Exception('Unsupported type {}', operate)
-    return r()
-
-
-@main.route('/daily_basic_month/<operate>', methods=['GET'])
-def daily_basic_month(operate):
-    if 'process' == operate:
-        DailyBasicMonthController().process()
-    elif 'delete' == operate:
-        DailyBasicMonthController().delete()
-    else:
-        raise Exception('Unsupported type {}', operate)
-    return r()
-
-
-@main.route('/daily_basic/<operate>', methods=['GET'])
-def daily_basic(operate):
-    if 'process' == operate:
-        DailyBasicController().process()
-    elif 'delete' == operate:
-        DailyBasicController().delete()
-    else:
-        raise Exception('Unsupported type {}', operate)
-    return r()
-
-
-####################################################
-"""
-    stock finance controllers 
-"""
-
-
-@main.route('/index_weight/<index_code>/delete', methods=['GET'])
-def index_weight_delete(index_code):
-    stock_basic_ctl = IndexWeightController(index_code)
-    stock_basic_ctl.delete()
-    return r()
-
-
-@main.route('/income/<ts_code>/process', methods=['GET'])
-def income_process(ts_code):
-    ctl = IncomeController(ts_code)
-    ctl.process()
-    return r()
-
-
-@main.route('/income/<ts_code>/delete', methods=['GET'])
-def income_delete(ts_code):
-    ctl = IncomeController(ts_code)
-    ctl.delete()
-    return r()
-
-
-@main.route('/one/<ts_code>/process', methods=['GET'])
-def one_process(ts_code):
-    finas = 'income,cashflow,fina_indicator,balancesheet'.split(',')
-    for fina in finas:
-        FinaBaseController(fina, ts_code).process()
-    # FinaBaseController('balancesheet', ts_code).process()
-    return r()
-
-
-@main.route('/one/<ts_code>/delete', methods=['GET'])
-def one_delete(ts_code):
-    finas = 'income,cashflow,fina_indicator,balancesheet'.split(',')
-    for fina in finas:
-        FinaBaseController(fina, ts_code).delete()
-    return r()
-
-
-@main.route('/all_stock/<operate>', methods=['GET'])
-def all_stock(operate):
-    if 'process' == operate:
-        AllController().process()
-    elif 'delete' == operate:
-        AllController().delete()
-    else:
-        raise Exception('Unsupported type {}', operate)
-    return r()
-
-
-@main.route('/fina/<fina>/<ts_code>/<operate>', methods=['GET'])
-def fina_process(fina, ts_code, operate):
-    if 'process' == operate:
-        FinaBaseController(fina, ts_code).process()
-    elif 'delete' == operate:
-        FinaBaseController(fina, ts_code).delete()
-    else:
-        raise Exception('Unsupported type {}', operate)
-    return r()
-
-
 @main.route('/one_fina/<ts_code>/<operate>', methods=['GET'])
 def one_fina_process(ts_code, operate):
     ctl = OneFinaController(ts_code)
@@ -174,7 +39,11 @@ def one_fina_process(ts_code, operate):
         ctl.delete()
     elif 'view' == operate:
         meta = ctl.get_biz_data()
-        return render_template('stk.html', meta=meta)
+
+        from analyse.stock import make_plot
+        png = make_plot(ctl.biz_code)
+
+        return render_template('stk.html', meta=meta, png=png)
     else:
         raise Exception('Unsupported type {}', operate)
     return r()
@@ -242,13 +111,16 @@ def daily(operate):
 ####################################################
 @main.route('/ctl/<interface>/<biz_code>/<operate>', methods=['GET'])
 def ctl_operate(interface, biz_code, operate):
-    clz = CTL_INTERFACE_CLASS_MAPPING[interface]
-    if not clz:
-        raise Exception('errer type flag')
+
+    if interface in CTL_INTERFACE_CLASS_MAPPING:
+        clz = CTL_INTERFACE_CLASS_MAPPING[interface]
+    else:
+        # raise Exception('errer type flag')
+        return redirect('/')
     module = __import__(clz.__module__, fromlist=True)
     contructor = getattr(module, clz.__name__)
 
-    if biz_code:
+    if biz_code and 'None' != biz_code:
         ctl = contructor(biz_code)
     else:
         ctl = contructor()
@@ -257,6 +129,9 @@ def ctl_operate(interface, biz_code, operate):
         ctl.process()
     elif 'delete' == operate:
         ctl.delete()
+    elif 'view' == operate:
+        ctls = ctl.get_biz_data()
+        return render_template('idx.html', ctls=ctls)
     else:
         raise Exception('Unsupported type {}', operate)
     return r()
@@ -375,6 +250,7 @@ def root():
 @main.route('/test')
 def i_test():
     return r()
+
 
 def r():
     return redirect(url_for('ts.root'))
