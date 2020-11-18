@@ -150,31 +150,40 @@ def make_plot(ts_code, render=None):
     df = get_df(ts_code)
     t = df.index
 
-    fig, ax2 = plt.subplots()
-    ax1 = ax2.twinx()  # instantiate a second axes that shares the same x-axis
+    fig, (main, down) = plt.subplots(2)
+    sub = main.twinx()  # instantiate a second axes that shares the same x-axis
 
     color = 'tab:red'
-    ax1.set_xlabel('Year')
-    ax1.set_ylabel('ROE')
-    ax1.plot(df['r3'], label='R3')
-    ax1.plot(df['r6'], label='R6')
-    ax1.plot(df['r9'], label='R9')
-    ax1.plot(df['r12'], label='R12')
-    ax1.legend()
+    sub.set_xlabel('Year')
+    sub.set_ylabel('ROE')
+    sub.plot(df['r3'], label='R3')
+    sub.plot(df['r6'], label='R6')
+    sub.plot(df['r9'], label='R9')
+    sub.plot(df['r12'], label='R12')
+    sub.legend()
 
-    ax1.tick_params(axis='y')
+    sub.tick_params(axis='y')
 
-    ax2.set_ylabel('NR ({})'.format(len(str(int(df['n12'].max())))))
+    main.set_ylabel('NR ({})'.format(len(str(int(df['n12'].max())))))
     width = 0.45
 
-    ax2.bar(t - 0.5 * width, df['n3'], width, label='n3')
-    ax2.bar(t - 0.2 * width, df['n6'], width, label='n6')
-    ax2.bar(t + 0.1 * width, df['n9'], width, label='n9')
-    ax2.bar(t + 0.4 * width, df['n12'], width, label='n12')
-    ax2.legend()
-    ax2.tick_params(axis='y')
+    main.bar(t - 0.5 * width, df['n3'], width, label='n3')
+    main.bar(t - 0.2 * width, df['n6'], width, label='n6')
+    main.bar(t + 0.1 * width, df['n9'], width, label='n9')
+    main.bar(t + 0.4 * width, df['n12'], width, label='n12')
+    main.legend()
+    main.tick_params(axis='y')
 
     # fig.tight_layout()  # otherwise the right y-label is slightly clipped
+    df['pe'] = df['pe'].apply(lambda x: 100 if x > 100 else x)
+    df['pe_ttm'] = df['pe_ttm'].apply(lambda x: 100 if x > 100 else x)
+    df[['pe', 'pe_ttm']].plot(ax=down)
+    # down.semilogy(df.index, df['pe'],label='PE')
+    down.scatter(2019, df.loc[2020]['p2'], marker='o', s=35,
+                 label='Persons W&H')
+    down.scatter(2019.5, df.loc[2020]['pt2'], marker='o', s=35,
+                 label='Persons W&H')
+    # down.legend(('pe', 'pe_ttm'))
 
     if render:
         plt.show()
@@ -218,4 +227,4 @@ order by f.y ,f.m ;""".format(ts_code)
 
 if __name__ == '__main__':
     m = MyShare()
-    make_plot('002027.SZ', render='a')
+    make_plot('600519.SH', render='a')
