@@ -55,4 +55,6 @@ where l.ts_code = b.ts_code and l.list_date <= b.end_date and
 
 
 Question：
-1，茅台，腾讯、古井B、洋河、民生、招商、信立泰、海康、双汇建仓时间。
+1,茅台，腾讯、古井B、洋河、民生、招商、信立泰、海康、双汇建仓时间。
+2,PEG
+3,add index

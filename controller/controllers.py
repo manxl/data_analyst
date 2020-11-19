@@ -82,7 +82,12 @@ class BaseController:
         his.save()
 
     def update(self):
+        # TODO 非普适性逻辑考虑优化
+        if self.operate == CTL_OPERATE_TRUNCATE:
+            self._delete_ts()
+
         self._update_ts()
+
         self._update_his()
 
     def _update_his(self):

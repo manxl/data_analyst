@@ -7,6 +7,7 @@ import matplotlib.pyplot as mp
 from controller.controllers import *
 
 
+
 @main.route('/meta/reload_income')
 def reload_income():
     force = request.args['force']
@@ -39,11 +40,9 @@ def one_fina_process(ts_code, operate):
         ctl.delete()
     elif 'view' == operate:
         meta = ctl.get_biz_data()
-
         from analyse.stock import make_plot
-        png = make_plot(ctl.biz_code)
-
-        return render_template('stk.html', meta=meta, png=png)
+        picture = make_plot(ctl.biz_code)
+        return render_template('stk.html', meta=meta, picture=picture)
     else:
         raise Exception('Unsupported type {}', operate)
     return r()
@@ -111,7 +110,6 @@ def daily(operate):
 ####################################################
 @main.route('/ctl/<interface>/<biz_code>/<operate>', methods=['GET'])
 def ctl_operate(interface, biz_code, operate):
-
     if interface in CTL_INTERFACE_CLASS_MAPPING:
         clz = CTL_INTERFACE_CLASS_MAPPING[interface]
     else:
@@ -249,7 +247,9 @@ def root():
 
 @main.route('/test')
 def i_test():
-    return r()
+    from analyse.stock import test_plt
+    picture = test_plt()
+    return f"<img src='data:image/png;base64,{picture}'/>"
 
 
 def r():

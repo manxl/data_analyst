@@ -2,6 +2,8 @@ import tushare as ts
 import pandas as pd
 import numpy as np
 import csv
+import base64
+from io import BytesIO
 import time, sys, os
 from conf.config import *
 from dao.db_pool import get_engine
@@ -75,7 +77,7 @@ class MyShare:
         plt.show()
 
     def test_plot_with_my_df(self):
-        d = get_df()
+        d = get_main_metric_df_by_ts_code()
         dk = d.iloc[:4]
         dk.reset_index(drop=True, inplace=True)
 
@@ -118,7 +120,7 @@ class MyShare:
         plt.show()
 
     def test_2_plot(self):
-        df = get_df()
+        df = get_main_metric_df_by_ts_code()
 
         p_r = (16, 9)
         fig, ax = plt.subplots(1, 1, figsize=p_r)
@@ -147,11 +149,16 @@ class MyShare:
 
 
 def make_plot(ts_code, render=None):
-    df = get_df(ts_code)
+    from matplotlib.gridspec import GridSpec
+    df = get_main_metric_df_by_ts_code(ts_code)
     t = df.index
 
-    fig, (main, down) = plt.subplots(2)
+    fig = plt.figure(constrained_layout=True, figsize=(12, 6))
+    gs = GridSpec(3, 3, figure=fig)
+    main = fig.add_subplot(gs[:2, :])
+
     sub = main.twinx()  # instantiate a second axes that shares the same x-axis
+    down = fig.add_subplot(gs[2, :])
 
     color = 'tab:red'
     sub.set_xlabel('Year')
@@ -164,7 +171,8 @@ def make_plot(ts_code, render=None):
 
     sub.tick_params(axis='y')
 
-    main.set_ylabel('NR ({})'.format(len(str(int(df['n12'].max())))))
+    # main.set_ylabel('NR ({})'.format(len(str(int(df['n12'].max())))))
+    main.set_ylabel('NR')
     width = 0.45
 
     main.bar(t - 0.5 * width, df['n3'], width, label='n3')
@@ -185,18 +193,24 @@ def make_plot(ts_code, render=None):
                  label='Persons W&H')
     # down.legend(('pe', 'pe_ttm'))
 
-    if render:
-        plt.show()
-    else:
+    return show(fig, render)
+
+
+def show(fig, render=None):
+    if render == 'web':
         p = os.path.dirname
         f = p(p(__file__)).__add__('/web/static/temp/{}')
-        f_name = ts_code + str(time.time()) + '.png'
+        f_name = str(time.time()) + '.png'
         w = f.format(f_name)
         plt.savefig(w)
         return w[w.find('/web/') + 4:]
+    elif render:
+        plt.show()
+    else:
+        return get_plot_base64(fig)
 
 
-def get_df(ts_code):
+def get_main_metric_df_by_ts_code(ts_code):
     sql_abc = """select 
 	s.ts_code,f.y,f.m,f.end_date,
 	i.n_income_attr_p ,
@@ -225,6 +239,104 @@ order by f.y ,f.m ;""".format(ts_code)
     return df
 
 
+def get_plot_base64(fig):
+    buf = BytesIO()
+    fig.savefig(buf, format="png")
+    data = base64.b64encode(buf.getbuffer()).decode("ascii")
+    return data
+
+
+def test_plt():
+    x = np.arange(0.1, 4, 0.1)
+    y1 = np.exp(-1.0 * x)
+    y2 = np.exp(-0.5 * x)
+
+    # example variable error bar values
+    y1err = 0.1 + 0.1 * np.sqrt(x)
+    y2err = 0.1 + 0.1 * np.sqrt(x / 2)
+
+    fig, (ax0, ax1, ax2) = plt.subplots(nrows=1, ncols=3, sharex=True,
+                                        figsize=(12, 6))
+
+    ax0.set_title('all errorbars')
+    ax0.errorbar(x, y1, yerr=y1err)
+    ax0.errorbar(x, y2, yerr=y2err)
+
+    ax1.set_title('only every 6th errorbar')
+    ax1.errorbar(x, y1, yerr=y1err, errorevery=6)
+    ax1.errorbar(x, y2, yerr=y2err, errorevery=6)
+
+    ax2.set_title('second series shifted by 3')
+    ax2.errorbar(x, y1, yerr=y1err, errorevery=(0, 6))
+    ax2.errorbar(x, y2, yerr=y2err, errorevery=(3, 6))
+
+    fig.suptitle('Errorbar subsampling')
+    return show(fig)
+
+
+def tangchao(ts_code, y):
+    aaa = pd.read_sql_query(f"select * from liability  where y = {y};", get_engine()).iloc[0, 2]
+    aaa = aaa / 100
+    x2aaa = aaa * 2
+    ep = 1 / x2aaa
+
+    daily = pd.read_sql_query(f"select ts_code,close,total_share from daily_basic where ts_code = '{ts_code}';",
+                              get_engine())
+    # price = daily.iloc[0, 1]
+    total_share = daily.iloc[0, 2] / 10000
+    # market = price * total_share
+    """
+    增长
+    """
+    roes = pd.read_sql_query(f"select y,m,roe from fina_indicator where ts_code = '{ts_code}' and y > {y} - 4;",
+                             get_engine())
+
+    y_max_m = roes[roes['y'] == y]['m'].max()
+    if y_max_m != 12:
+        s_m = roes[(roes['y'] != y) & (roes['m'] == y_max_m)]
+        s_12 = roes[(roes['y'] != y) & (roes['m'] == 12)]
+        s_m = s_m.reset_index()
+        s_12 = s_12.reset_index()
+        roe_mean = (s_12['roe'] / s_m['roe']).mean()
+        s = s_12['roe']
+        s[0] = roes[(roes['y'] == y) & (roes['m'] == y_max_m)].iloc[0]['roe'] * roe_mean
+        rase_mean = s.mean()
+
+    """
+    利润
+    """
+    incomes = pd.read_sql_query(
+        f"select y,m,n_income/100000000 as n_income from income where ts_code= '{ts_code}' and y >= {y} -1",
+        get_engine())
+    if y_max_m != 12:
+        last_y_m = incomes[(incomes['y'] == y - 1) & (incomes['m'] == y_max_m)].iloc[0]['n_income']
+        last_y_12 = incomes[(incomes['y'] == y - 1) & (incomes['m'] == 12)].iloc[0]['n_income']
+        y_m = incomes[(incomes['y'] == y) & (incomes['m'] == y_max_m)].iloc[0]['n_income']
+
+        increase = last_y_12 - last_y_m + y_m
+
+    """
+    折现
+    """
+    discounting = 1 / 1.06
+    rase_mean_rate = 1 + rase_mean / 100
+    d_arr = np.logspace(1, 4, 4, endpoint=True, base=discounting)
+    i_arr = np.logspace(1, 4, 4, endpoint=True, base=rase_mean_rate)
+    m_arr = d_arr * i_arr
+
+    m_arr[3] = d_arr[3] / aaa * m_arr[2]
+    sum_all_multi = m_arr.sum()
+    calc_market_value = sum_all_multi * increase
+    # print(price)
+    print(f"calc_market_value:{calc_market_value}")
+    print("calc_market_price:{}".format(calc_market_value / total_share))
+    print("calc_market_price_count:{}".format(calc_market_value * 0.7 / total_share))
+
 if __name__ == '__main__':
     m = MyShare()
-    make_plot('600519.SH', render='a')
+    ts_code = '002304.SZ'
+    ts_code = '600519.SH'
+    ts_code = '002415.SZ'
+    ts_code = '000596.SZ'
+    # make_plot('600519.SH', render='a')
+    tangchao(ts_code, 2020)
