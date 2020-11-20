@@ -183,14 +183,12 @@ def make_plot(ts_code, render=None):
     main.tick_params(axis='y')
 
     # fig.tight_layout()  # otherwise the right y-label is slightly clipped
-    df['pe'] = df['pe'].apply(lambda x: 100 if x > 100 else x)
-    df['pe_ttm'] = df['pe_ttm'].apply(lambda x: 100 if x > 100 else x)
-    df[['pe', 'pe_ttm']].plot(ax=down)
+    df['pe12'] = df['pe12'].apply(lambda x: 100 if x > 100 else x)
+    df['pe_ttm12'] = df['pe_ttm12'].apply(lambda x: 100 if x > 100 else x)
+    df[['pe12', 'pe_ttm12']].plot(ax=down)
     # down.semilogy(df.index, df['pe'],label='PE')
-    down.scatter(2019, df.loc[2020]['p2'], marker='o', s=35,
-                 label='Persons W&H')
-    down.scatter(2019.5, df.loc[2020]['pt2'], marker='o', s=35,
-                 label='Persons W&H')
+    down.scatter(2019, df.loc[2020]['p2'], marker='o', s=35, label='Persons W&H')
+    down.scatter(2019.5, df.loc[2020]['pt2'], marker='o', s=35, label='Persons W&H')
     # down.legend(('pe', 'pe_ttm'))
 
     return show(fig, render)
@@ -235,6 +233,8 @@ order by f.y ,f.m ;""".format(ts_code)
         t = t.set_index(['y'])
         df['n{}'.format(i * 3)] = t['n_income_attr_p']
         df['r{}'.format(i * 3)] = t['roe']
+        df['pe{}'.format(i * 3)] = t['pe']
+        df['pe_ttm{}'.format(i * 3)] = t['pe_ttm']
 
     return df
 
@@ -278,7 +278,7 @@ def tangchao(ts_code, y):
     aaa = pd.read_sql_query(f"select * from liability  where y = {y};", get_engine()).iloc[0, 2]
     aaa = aaa / 100
     x2aaa = aaa * 2
-    ep = 1 / x2aaa
+    expect_ep = 1 / x2aaa
 
     daily = pd.read_sql_query(f"select ts_code,close,total_share from daily_basic where ts_code = '{ts_code}';",
                               get_engine())
@@ -286,57 +286,83 @@ def tangchao(ts_code, y):
     total_share = daily.iloc[0, 2] / 10000
     # market = price * total_share
     """
-    增长
+    growth
     """
-    roes = pd.read_sql_query(f"select y,m,roe from fina_indicator where ts_code = '{ts_code}' and y > {y} - 4;",
-                             get_engine())
+    df = pd.read_sql_query(f"select 1 from fina_indicator where ts_code = '{ts_code}' and y = {y} and m = 12;",
+                           get_engine())
 
-    y_max_m = roes[roes['y'] == y]['m'].max()
-    if y_max_m != 12:
-        s_m = roes[(roes['y'] != y) & (roes['m'] == y_max_m)]
-        s_12 = roes[(roes['y'] != y) & (roes['m'] == 12)]
-        s_m = s_m.reset_index()
-        s_12 = s_12.reset_index()
-        roe_mean = (s_12['roe'] / s_m['roe']).mean()
-        s = s_12['roe']
-        s[0] = roes[(roes['y'] == y) & (roes['m'] == y_max_m)].iloc[0]['roe'] * roe_mean
-        rase_mean = s.mean()
+    if len(df):
+        roes = pd.read_sql_query(
+            f"select roe from fina_indicator where ts_code = '{ts_code}' and y between {y} - 3 and {y};",
+            get_engine())
+        rase_mean = roes.mean()
+        incomes = pd.read_sql_query(
+            f"select y,m,n_income/100000000 as n_income from income where ts_code= '{ts_code}' and y = {y}",
+            get_engine())
 
-    """
-    利润
-    """
-    incomes = pd.read_sql_query(
-        f"select y,m,n_income/100000000 as n_income from income where ts_code= '{ts_code}' and y >= {y} -1",
-        get_engine())
-    if y_max_m != 12:
-        last_y_m = incomes[(incomes['y'] == y - 1) & (incomes['m'] == y_max_m)].iloc[0]['n_income']
+        retained_profits = incomes.iloc[0]['n_income']
+
+    else:
+        roes = pd.read_sql_query(f"select y,m,roe from fina_indicator where ts_code = '{ts_code}' and y > {y} - 4;",
+                                 get_engine())
+        # get session’s month report number
+        session_month_num = roes[roes['y'] == y]['m'].max()
+
+        all_before_session_roes = roes[(roes['y'] != y) & (roes['m'] == session_month_num)]
+        all_before_year_end_roes = roes[(roes['y'] != y) & (roes['m'] == 12)]
+        # before join , need make the index accordance
+        all_before_session_roes = all_before_session_roes.reset_index()
+        all_before_year_end_roes = all_before_year_end_roes.reset_index()
+
+        # infer the nearest roe by before session
+        before_roes_2_month_ratio = (all_before_year_end_roes['roe'] / all_before_session_roes['roe']).mean()
+
+        # all before roe number series
+        all_roes_to_mean = all_before_year_end_roes['roe']
+
+        # use ratio and now month's roe calc year end's roe
+        # replace the farthest year's roe ,to prepare calc de avg roe
+        all_roes_to_mean[0] = roes[(roes['y'] == y) & (roes['m'] == session_month_num)].iloc[0][
+                                  'roe'] * before_roes_2_month_ratio
+        rase_mean = all_roes_to_mean.mean()
+
+        """
+            profit ttm
+        """
+        incomes = pd.read_sql_query(
+            f"select y,m,n_income/100000000 as n_income from income where ts_code= '{ts_code}' and y >= {y} -1",
+            get_engine())
+        last_y_m = incomes[(incomes['y'] == y - 1) & (incomes['m'] == session_month_num)].iloc[0]['n_income']
         last_y_12 = incomes[(incomes['y'] == y - 1) & (incomes['m'] == 12)].iloc[0]['n_income']
-        y_m = incomes[(incomes['y'] == y) & (incomes['m'] == y_max_m)].iloc[0]['n_income']
+        y_m = incomes[(incomes['y'] == y) & (incomes['m'] == session_month_num)].iloc[0]['n_income']
+        retained_profits = last_y_12 - last_y_m + y_m
 
-        increase = last_y_12 - last_y_m + y_m
-
-    """
-    折现
-    """
+    # 折现
     discounting = 1 / 1.06
+    # 增长
     rase_mean_rate = 1 + rase_mean / 100
+
+    # 两段折现基础数据
     d_arr = np.logspace(1, 4, 4, endpoint=True, base=discounting)
     i_arr = np.logspace(1, 4, 4, endpoint=True, base=rase_mean_rate)
-    m_arr = d_arr * i_arr
+    # 第一段
+    real_increase_rate = d_arr * i_arr
+    # 永续段替换
+    real_increase_rate[3] = d_arr[3] / aaa * real_increase_rate[2]
 
-    m_arr[3] = d_arr[3] / aaa * m_arr[2]
-    sum_all_multi = m_arr.sum()
-    calc_market_value = sum_all_multi * increase
+    sum_all_multi = real_increase_rate.sum()
+    calc_market_value = sum_all_multi * retained_profits
     # print(price)
     print(f"calc_market_value:{calc_market_value}")
     print("calc_market_price:{}".format(calc_market_value / total_share))
     print("calc_market_price_count:{}".format(calc_market_value * 0.7 / total_share))
 
+
 if __name__ == '__main__':
     m = MyShare()
     ts_code = '002304.SZ'
-    ts_code = '600519.SH'
-    ts_code = '002415.SZ'
-    ts_code = '000596.SZ'
-    # make_plot('600519.SH', render='a')
-    tangchao(ts_code, 2020)
+    # ts_code = '600519.SH'
+    # ts_code = '002415.SZ'
+    # ts_code = '000596.SZ'
+    make_plot('600519.SH', render='a')
+    # tangchao(ts_code, 2020)

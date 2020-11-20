@@ -58,12 +58,10 @@ def test_d():
     import numpy as np
     import matplotlib.pyplot as plt
 
-    # example data
     x = np.arange(0.1, 4, 0.1)
     y1 = np.exp(-1.0 * x)
     y2 = np.exp(-0.5 * x)
 
-    # example variable error bar values
     y1err = 0.1 + 0.1 * np.sqrt(x)
     y2err = 0.1 + 0.1 * np.sqrt(x / 2)
 
@@ -86,6 +84,24 @@ def test_d():
     plt.show()
 
 
+def test_set_color():
+    import matplotlib.pyplot as plt
+    import numpy as np
+
+    # 生成x y
+    np.random.seed(0)
+    x = np.arange(5)
+    y = np.random.randint(-5, 5, 5)
+    # 添加颜色
+    v_bar = plt.bar(x, y, color='blue')
+
+    # 对y值大于0设置为蓝色  小于0的柱设置为绿色
+    for bar, x in zip(v_bar, x):
+        if x > 2:
+            bar.set(color='green')
+
+    plt.show()
+
+
 if __name__ == '__main__':
-    # test_plot_2()
-    test_d()
+    test_set_color()
