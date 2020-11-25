@@ -7,7 +7,6 @@ import matplotlib.pyplot as mp
 from controller.controllers import *
 
 
-
 @main.route('/meta/reload_income')
 def reload_income():
     force = request.args['force']
@@ -116,12 +115,15 @@ def ctl_operate(interface, biz_code, operate):
         # raise Exception('errer type flag')
         return redirect('/')
     module = __import__(clz.__module__, fromlist=True)
-    contructor = getattr(module, clz.__name__)
+    constructor = getattr(module, clz.__name__)
 
     if biz_code and 'None' != biz_code:
-        ctl = contructor(biz_code)
+        if constructor is FinaBaseController:
+            ctl = constructor(interface, biz_code)
+        else:
+            ctl = constructor(biz_code)
     else:
-        ctl = contructor()
+        ctl = constructor()
 
     if 'process' == operate:
         ctl.process()
@@ -224,8 +226,8 @@ def root():
         ts_code = TEST_TS_CODE_ZGPA
     else:
         ts_code = session['ts_code']
-    ctls['Income'] = IncomeController(ts_code)
-    ctls['Dividend'] = FinaBaseController('dividend', ts_code)
+    # ctls['Income'] = IncomeController(ts_code)
+    # ctls['Dividend'] = FinaBaseController('dividend', ts_code)
 
     one_ctls = []
     for n in 'balancesheet,income,cashflow,fina_indicator,dividend'.split(','):
@@ -241,6 +243,9 @@ def root():
 
     ctls['One Index Code'] = OneIndexController(index_code)
     ctls['All'] = AllController()
+
+    ctls['ValueCalcController'] = ValueCalcController(ts_code)
+    ctls['OneIndexValueController'] = OneIndexValueController(index_code)
 
     return render_template('index.html', ctls=ctls)
 

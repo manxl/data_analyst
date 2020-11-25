@@ -100,8 +100,11 @@ class BaseController:
         pass
 
     def delete(self):
-        self._delete_ts()
-        self._delete_his()
+        if self.his:
+            self._delete_ts()
+            self._delete_his()
+        else:
+            logging.info('DELETA OPERATION {}-{} has no his .'.format(self.interface, self.biz_code))
 
     def _delete_his(self):
         his = His.query.filter_by(table_name=self.interface, biz_code=self.biz_code).one()
@@ -303,7 +306,7 @@ class FinaBaseController(BaseController):
 
     def __init__(self, table, biz_code):
         if 'dividend' == table:
-            super().__init__(table, CTL_CYCLE_DAY, CTL_OPERATE_APPEND, biz_code=biz_code, biz_col_name='ts_code',
+            super().__init__(table, CTL_CYCLE_YEAR, CTL_OPERATE_TRUNCATE, biz_code=biz_code, biz_col_name='ts_code',
                              calc_table='_stat')
         else:
             super().__init__(table, CTL_CYCLE_DAY, CTL_OPERATE_APPEND, biz_code=biz_code, biz_col_name='ts_code')
@@ -517,3 +520,46 @@ class DailyBasicController(BaseController):
         if self.his is not None and cal_date <= self.his.end_date:
             return None
         return cal_date
+
+
+class ValueCalcController(BaseController):
+    def __init__(self, biz_code):
+        super().__init__('calc_val', CTL_CYCLE_MONTH, CTL_OPERATE_APPEND, biz_code=biz_code, biz_col_name='ts_code')
+
+    def _update_ts(self):
+        self.delete()
+        self._init_ts()
+
+    def _init_ts(self):
+        from analyse.metrics import my_e3
+        my_e3(self.biz_code, 2020)
+
+
+class OneIndexValueController(MultiCtlController):
+    def __init__(self, biz_code):
+        super().__init__('one_idx_val', biz_code)
+
+    def _init_ts(self, his=None):
+        for ts_code in self._get_con_codes():
+            ValueCalcController(ts_code).process()
+
+    def _delete_ts(self):
+        for ts_code in self._get_con_codes():
+            ValueCalcController(ts_code).delete()
+
+    def _get_con_codes(self):
+        sql = """select * from index_weight where index_code = '{}'
+                and trade_date = (select max(trade_date) from  index_weight where index_code = '{}')""".format(
+            self.biz_code, self.biz_code, )
+
+        df = pd.read_sql_query(sql, get_engine())
+        if len(df) == 0:
+            raise Exception('index not initialed.')
+        return df['con_code']
+
+    def get_biz_data(self):
+        con_codes = self._get_con_codes()
+        sub_ctls = []
+        for ts_code in con_codes:
+            sub_ctls.append(OneFinaController(ts_code))
+        return sub_ctls

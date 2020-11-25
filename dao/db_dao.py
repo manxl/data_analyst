@@ -181,7 +181,7 @@ def init_table_indexes():
                        'list_date', 'delist_date', 'total_share', 'total_liab', 'total_cur_assets', 'total_assets',
                        'dt_eps', 'current_ratio', 'quick_ratio', 'close', 'stk_div', 'cash_div'])
 
-    sql_tpl_create_index = 'create index idx_{}_{} on {} ({});'
+    sql_tpl_create_index = 'incomesindex idx_{}_{} on {} ({});'
     e = get_engine()
     for table_name in df.iloc[:, 0]:
         sql_index = 'show index from {};'.format(table_name)
