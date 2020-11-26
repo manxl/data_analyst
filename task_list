@@ -31,7 +31,7 @@ where l.ts_code = b.ts_code and l.list_date <= b.end_date and
 
 
 
-
+===============Graham：
 
 低估标准
 	盈利率 L3A*2
@@ -49,12 +49,20 @@ where l.ts_code = b.ts_code and l.list_date <= b.end_date and
 		总债务小于股东权益
 	流动资产价值 > 总负债 1/2
 
+===============Tangchao：
+1,ROE （净资产/净利润） > 15%
+2,> 5 years
+3,三达标，董事会报告和重要事项
 
 
 
 
-
-Question：
+TODO：
 1,茅台，腾讯、古井B、洋河、民生、招商、信立泰、海康、双汇建仓时间。
 2,PEG
 3,add index
+4,balancesheet 应收票据、应收账款、应付账款、预付款、预收款，行业同比。
+5,income 营业外收支占比
+6，成本、税收、费用历史占比、同行占比比较
+
+
