@@ -14,6 +14,11 @@ def test_method1():
     print(df)
 
 
-if __name__ == '__main__':
-    test_method1()
+def test_method_2():
+    from dao.db_pool import get_pro
+    df = get_pro().query('balancesheet', ts_code='002027.SZ')
+    print(df)
 
+
+if __name__ == '__main__':
+    test_method_2()

@@ -77,7 +77,7 @@ class MyShare:
         plt.show()
 
     def test_plot_with_my_df(self):
-        d = get_main_metric_df_by_ts_code()
+        d = get_nincome_roe_pe_meta()
         dk = d.iloc[:4]
         dk.reset_index(drop=True, inplace=True)
 
@@ -120,7 +120,7 @@ class MyShare:
         plt.show()
 
     def test_2_plot(self):
-        df = get_main_metric_df_by_ts_code()
+        df = get_nincome_roe_pe_meta()
 
         p_r = (16, 9)
         fig, ax = plt.subplots(1, 1, figsize=p_r)
@@ -148,9 +148,9 @@ class MyShare:
         plt.show()
 
 
-def make_plot(ts_code, render=None):
+def plot_nincome_roe_pe_meta(ts_code, render=None):
     from matplotlib.gridspec import GridSpec
-    df = get_main_metric_df_by_ts_code(ts_code)
+    df = get_nincome_roe_pe_meta(ts_code)
     t = df.index
 
     fig = plt.figure(constrained_layout=True, figsize=(12, 6))
@@ -194,6 +194,46 @@ def make_plot(ts_code, render=None):
     return show(fig, render)
 
 
+def plot_hbar_by_dfs(dfs, render=None):
+    total_row = 0
+    for df in dfs:
+        total_row += len(df)
+
+    h = 5 / 10 * total_row
+
+    fig, axs = plt.subplots(len(dfs), figsize=(9.2, h))
+
+    for ax_idx, df in enumerate(dfs):
+        if len(dfs) == 1:
+            ax = axs
+        else:
+            ax = axs[ax_idx]
+        ax.invert_yaxis()
+        ax.xaxis.set_visible(False)
+        labels = list(df.index)
+        # data = np.array(list(dfs[1].values()))
+        data_cum = df.cumsum(axis=1)
+        category_colors = plt.get_cmap('RdYlGn')(np.linspace(0.15, 0.85, df.shape[1]))
+
+        ax.set_xlim(0, round(data_cum.max().max(), 0))
+
+        category_names = df.columns.values.tolist()
+
+        for i, (colname, color) in enumerate(zip(category_names, category_colors)):
+            widths = df.iloc[:, i]
+            starts = data_cum.iloc[:, i] - widths
+            ax.barh(labels, widths, left=starts, height=0.5, label=colname, color=color)
+            xcenters = starts + widths / 2
+
+            r, g, b, _ = color
+            text_color = 'white' if r * g * b < 0.5 else 'darkgrey'
+            for y, (x, c) in enumerate(zip(xcenters, widths)):
+                ax.text(x, y, str(int(c)), ha='center', va='center', color=text_color)
+        ax.legend(ncol=len(category_names), bbox_to_anchor=(0, 1), loc='lower left', fontsize='small')
+
+    return show(fig, render)
+
+
 def show(fig, render=None):
     if render == 'web':
         p = os.path.dirname
@@ -208,7 +248,14 @@ def show(fig, render=None):
         return get_plot_base64(fig)
 
 
-def get_main_metric_df_by_ts_code(ts_code):
+def get_plot_base64(fig):
+    buf = BytesIO()
+    fig.savefig(buf, format="png")
+    data = base64.b64encode(buf.getbuffer()).decode("ascii")
+    return data
+
+
+def get_nincome_roe_pe_meta(ts_code):
     sql_abc = """select 
 	s.ts_code,f.y,f.m,f.end_date,
 	i.n_income_attr_p ,
@@ -239,39 +286,85 @@ order by f.y ,f.m ;""".format(ts_code)
     return df
 
 
-def get_plot_base64(fig):
-    buf = BytesIO()
-    fig.savefig(buf, format="png")
-    data = base64.b64encode(buf.getbuffer()).decode("ascii")
-    return data
+def get_balancesheet_df(ts_code, y=None):
+    if not y:
+        sql = f"""select
+	b.y,
+	notes_receiv,accounts_receiv,prepayment,inventories,total_cur_assets
+# ,total_assets
+# 	,notes_payable,acct_payable,adv_receipts,total_cur_liab,total_liab,b.ts_code
+from 
+	balancesheet b
+where 
+	b.ts_code  = '{ts_code}' and b.m = 12 
+order by 
+	b.y desc;"""
+    else:
+        sql = f"""select
+	notes_receiv,accounts_receiv,prepayment,inventories,total_cur_assets,b.ts_code
+from 
+	stock_basic s,balancesheet b 
+where 
+	s.ts_code = b.ts_code
+  and s.industry in (select industry from stock_basic where ts_code = '{ts_code}')
+	and b.y = {y} and b.m = 12 ;"""
+    df = pd.read_sql_query(sql, get_engine())
+
+    if 'y' in df.columns:
+        df = df.set_index(['y'])
+    elif 'ts_code' in df.columns:
+        print('mark')
+        df.loc[df[df['ts_code'] == ts_code].index[0], ['ts_code']] = ts_code + '(*)'
+        df = df.set_index(['ts_code'])
+    else:
+        raise AttributeError('Nether y nor ts_code must in dataframe!')
+
+    v_list = df.columns.values.tolist()
+    last_col = v_list[len(v_list) - 1]
+
+    for col in df.columns.values.tolist():
+        # delete nan
+        df[col] = df[col].apply(lambda x: 0 if x != x or x is None else x)
+        # calc last_col
+        if last_col != col:
+            df[last_col] = df[last_col] - df[col]
+
+    sm = df.sum(axis=1)
+    flag1 = sm != 0
+    flag2 = df[df.columns[len(df.columns) - 1]] != 0
+    sm = sm[flag1 & flag2]
+    df = df[flag1 & flag2]
+
+    if len(df) == 0:
+        return None
+
+    for col in df.columns.values.tolist():
+        df[col] = round(df[col] * 100 / sm, 2)
+
+    print(df.sum(axis=1))
+
+    # results = {}
+    # for key in df.index:
+    #     arr = []
+    #     results[key] = arr
+    #     for col in v_list:
+    #         arr.append(df.loc[key][col])
+
+    # print(results)
+
+    # return v_list, results
+    return df
 
 
-def test_plt():
-    x = np.arange(0.1, 4, 0.1)
-    y1 = np.exp(-1.0 * x)
-    y2 = np.exp(-0.5 * x)
-
-    # example variable error bar values
-    y1err = 0.1 + 0.1 * np.sqrt(x)
-    y2err = 0.1 + 0.1 * np.sqrt(x / 2)
-
-    fig, (ax0, ax1, ax2) = plt.subplots(nrows=1, ncols=3, sharex=True,
-                                        figsize=(12, 6))
-
-    ax0.set_title('all errorbars')
-    ax0.errorbar(x, y1, yerr=y1err)
-    ax0.errorbar(x, y2, yerr=y2err)
-
-    ax1.set_title('only every 6th errorbar')
-    ax1.errorbar(x, y1, yerr=y1err, errorevery=6)
-    ax1.errorbar(x, y2, yerr=y2err, errorevery=6)
-
-    ax2.set_title('second series shifted by 3')
-    ax2.errorbar(x, y1, yerr=y1err, errorevery=(0, 6))
-    ax2.errorbar(x, y2, yerr=y2err, errorevery=(3, 6))
-
-    fig.suptitle('Errorbar subsampling')
-    return show(fig)
+def plot_balancesheet(ts_code, render=None):
+    dfs = []
+    # d1 = get_balancesheet_df(ts_code, 2019)
+    # if d1 is not None:
+    #     dfs.append(d1)
+    d2 = get_balancesheet_df(ts_code)
+    if d2 is not None:
+        dfs.append(d2)
+    return plot_hbar_by_dfs(dfs, render=render)
 
 
 def tangchao(ts_code, y):
@@ -364,5 +457,7 @@ if __name__ == '__main__':
     # ts_code = '600519.SH'
     # ts_code = '002415.SZ'
     # ts_code = '000596.SZ'
-    make_plot('600519.SH', render='a')
+    # plot_nincome_roe_pe_meta('600519.SH', render='a')
+    plot_balancesheet('002027.SZ', render='a')
+
     # tangchao(ts_code, 2020)

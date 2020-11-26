@@ -39,9 +39,13 @@ def one_fina_process(ts_code, operate):
         ctl.delete()
     elif 'view' == operate:
         meta = ctl.get_biz_data()
-        from analyse.stock import make_plot
-        picture = make_plot(ctl.biz_code)
-        return render_template('stk.html', meta=meta, picture=picture)
+        from analyse.stock import plot_nincome_roe_pe_meta,plot_balancesheet
+        picture = plot_nincome_roe_pe_meta(ctl.biz_code)
+
+        picture2 = plot_balancesheet(ctl.biz_code)
+
+
+        return render_template('stk.html', meta=meta, picture=picture,picture2=picture2)
     else:
         raise Exception('Unsupported type {}', operate)
     return r()
