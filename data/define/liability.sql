@@ -64,7 +64,7 @@ INSERT INTO `liability` VALUES ('31', '2020', '3.970000');
 
 
 
-
+## index weigth data
 INSERT INTO `index_weight`
 (`index_code`, `con_code`, `y`, `m`, `trade_date`, `weight`) VALUES
 ('tangchao', '600519.SH', '2019', '12', '2019-12-31', '2.425000'),
@@ -72,3 +72,22 @@ INSERT INTO `index_weight`
 ('tangchao', '002415.SZ', '2019', '12', '2019-12-31', '2.425000'),
 ('tangchao', '002027.SZ', '2019', '12', '2019-12-31', '2.425000'),
 ('tangchao', '000596.SZ', '2019', '12', '2019-12-31', '2.425000');
+
+
+# calc_val table
+CREATE TABLE `calc_val` (
+                            `ts_code` varchar(10) NOT NULL,
+                            `aaa` float DEFAULT NULL,
+                            `inflation` float DEFAULT NULL,
+                            `y` int NOT NULL,
+                            `m` int NOT NULL,
+                            `y_p_1` float DEFAULT NULL,
+                            `y_p_2` float DEFAULT NULL,
+                            `y_p_3` float DEFAULT NULL,
+                            `y_p_sustain` float DEFAULT NULL,
+                            `calc_val` float DEFAULT NULL,
+                            PRIMARY KEY (`ts_code`,`y`,`m`),
+                            KEY `idx_calc_val_m` (`m`),
+                            KEY `idx_calc_val_y` (`y`),
+                            KEY `idx_calc_val_ts_code` (`ts_code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
