@@ -7,24 +7,6 @@ import json
 from openpyxl.styles import numbers
 import numpy as np
 
-sql = """
-select 
-	b.y,b.total_hldr_eqy_inc_min_int as e,
-	i.n_income as r,
-	i.n_income /total_hldr_eqy_exc_min_int as roe,
-	d.cash_div_tax*d.base_share as s
-from 
-	balancesheet b,income i , fina_indicator f,dividend d
-where 1=1
-	and b.ts_code = i.ts_code and i.ts_code = f.ts_code and f.ts_code = d.ts_code
-	and b.y = i.y and i.y = f.y and f.y	= d.y
-	and b.m = i.m and i.m = f.m
-	and b.ts_code = '{}' and b.y between {} and {} and b.m = 12 
-	order by b.y asc;
-
-""".format(TEST_TS_CODE_GSYH, 2006, 2010)
-
-df = pd.read_sql_query(sql, get_engine())
 
 
 # for i in df.iterrows():
@@ -137,7 +119,7 @@ def my_e2():
         sheet.column_dimensions[c].collapsed = False
 
     heads = 'metrics,RP,NA,ROE,SOB,SOBR'.split(',')
-    i = 0;
+    i = 0
     for head in heads:
         i += 1
         c = sheet.cell(1, i, head)
@@ -222,5 +204,87 @@ def my_e3(ts_code, y, m=None, limit=5):
 
     print(sql)
 
+def tangchao(ts_code, y):
+    aaa = pd.read_sql_query(f"select * from liability  where y = {y};", get_engine()).iloc[0, 2]
+    aaa = aaa / 100
+    x2aaa = aaa * 2
+    expect_ep = 1 / x2aaa
+
+    daily = pd.read_sql_query(f"select ts_code,close,total_share from daily_basic where ts_code = '{ts_code}';",
+                              get_engine())
+    # price = daily.iloc[0, 1]
+    total_share = daily.iloc[0, 2] / 10000
+    # market = price * total_share
+    """
+    growth
+    """
+    df = pd.read_sql_query(f"select 1 from fina_indicator where ts_code = '{ts_code}' and y = {y} and m = 12;",
+                           get_engine())
+
+    if len(df):
+        roes = pd.read_sql_query(
+            f"select roe from fina_indicator where ts_code = '{ts_code}' and y between {y} - 3 and {y};",
+            get_engine())
+        rase_mean = roes.mean()
+        incomes = pd.read_sql_query(
+            f"select y,m,n_income/100000000 as n_income from income where ts_code= '{ts_code}' and y = {y}",
+            get_engine())
+
+        retained_profits = incomes.iloc[0]['n_income']
+
+    else:
+        roes = pd.read_sql_query(f"select y,m,roe from fina_indicator where ts_code = '{ts_code}' and y > {y} - 4;",
+                                 get_engine())
+        # get session’s month report number
+        session_month_num = roes[roes['y'] == y]['m'].max()
+
+        all_before_session_roes = roes[(roes['y'] != y) & (roes['m'] == session_month_num)]
+        all_before_year_end_roes = roes[(roes['y'] != y) & (roes['m'] == 12)]
+        # before join , need make the index accordance
+        all_before_session_roes = all_before_session_roes.reset_index()
+        all_before_year_end_roes = all_before_year_end_roes.reset_index()
+
+        # infer the nearest roe by before session
+        before_roes_2_month_ratio = (all_before_year_end_roes['roe'] / all_before_session_roes['roe']).mean()
+
+        # all before roe number series
+        all_roes_to_mean = all_before_year_end_roes['roe']
+
+        # use ratio and now month's roe calc year end's roe
+        # replace the farthest year's roe ,to prepare calc de avg roe
+        all_roes_to_mean[0] = roes[(roes['y'] == y) & (roes['m'] == session_month_num)].iloc[0][
+                                  'roe'] * before_roes_2_month_ratio
+        rase_mean = all_roes_to_mean.mean()
+
+        """
+            profit ttm
+        """
+        incomes = pd.read_sql_query(
+            f"select y,m,n_income/100000000 as n_income from income where ts_code= '{ts_code}' and y >= {y} -1",
+            get_engine())
+        last_y_m = incomes[(incomes['y'] == y - 1) & (incomes['m'] == session_month_num)].iloc[0]['n_income']
+        last_y_12 = incomes[(incomes['y'] == y - 1) & (incomes['m'] == 12)].iloc[0]['n_income']
+        y_m = incomes[(incomes['y'] == y) & (incomes['m'] == session_month_num)].iloc[0]['n_income']
+        retained_profits = last_y_12 - last_y_m + y_m
+
+    # 折现
+    discounting = 1 / 1.06
+    # 增长
+    rase_mean_rate = 1 + rase_mean / 100
+
+    # 两段折现基础数据
+    d_arr = np.logspace(1, 4, 4, endpoint=True, base=discounting)
+    i_arr = np.logspace(1, 4, 4, endpoint=True, base=rase_mean_rate)
+    # 第一段
+    real_increase_rate = d_arr * i_arr
+    # 永续段替换
+    real_increase_rate[3] = d_arr[3] / aaa * real_increase_rate[2]
+
+    sum_all_multi = real_increase_rate.sum()
+    calc_market_value = sum_all_multi * retained_profits
+    # print(price)
+    print(f"calc_market_value:{calc_market_value}")
+    print("calc_market_price:{}".format(calc_market_value / total_share))
+    print("calc_market_price_count:{}".format(calc_market_value * 0.7 / total_share))
 
 my_e3('600516.SH', 2020)

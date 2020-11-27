@@ -531,7 +531,7 @@ class ValueCalcController(BaseController):
         self._init_ts()
 
     def _init_ts(self):
-        from analyse.metrics import my_e3
+        from analyse.my_file import my_e3
         my_e3(self.biz_code, 2020)
 
 

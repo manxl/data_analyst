@@ -39,7 +39,7 @@ def one_fina_process(ts_code, operate):
         ctl.delete()
     elif 'view' == operate:
         meta = ctl.get_biz_data()
-        from analyse.stock import plot_nincome_roe_pe_meta,plot_balancesheet
+        from analyse.my_plot import plot_nincome_roe_pe_meta,plot_balancesheet
         picture = plot_nincome_roe_pe_meta(ctl.biz_code)
 
         picture2 = plot_balancesheet(ctl.biz_code)
@@ -256,7 +256,7 @@ def root():
 
 @main.route('/test')
 def i_test():
-    from analyse.stock import test_plt
+    from analyse.my_plot import test_plt
     picture = test_plt()
     return f"<img src='data:image/png;base64,{picture}'/>"
 

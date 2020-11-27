@@ -21,4 +21,9 @@ def test_method_2():
 
 
 if __name__ == '__main__':
-    test_method_2()
+    a = [[1, 2, 3], [4, 5, 6, 6]]
+    a = [1, 2, 3]
+    print(dir(a))
+    print(a)
+    n = np.array(a)
+    print(n.shape)
