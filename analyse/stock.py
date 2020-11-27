@@ -208,7 +208,7 @@ def plot_hbar_by_dfs(dfs, render=None):
             ax = axs
         else:
             ax = axs[ax_idx]
-        ax.invert_yaxis()
+        # ax.invert_yaxis()
         ax.xaxis.set_visible(False)
         labels = list(df.index)
         # data = np.array(list(dfs[1].values()))
@@ -228,6 +228,8 @@ def plot_hbar_by_dfs(dfs, render=None):
             r, g, b, _ = color
             text_color = 'white' if r * g * b < 0.5 else 'darkgrey'
             for y, (x, c) in enumerate(zip(xcenters, widths)):
+                if type(df.index.max()) is not str:
+                    y = df.index.max() - y
                 ax.text(x, y, str(int(c)), ha='center', va='center', color=text_color)
         ax.legend(ncol=len(category_names), bbox_to_anchor=(0, 1), loc='lower left', fontsize='small')
 
@@ -341,7 +343,7 @@ where
     for col in df.columns.values.tolist():
         df[col] = round(df[col] * 100 / sm, 2)
 
-    print(df.sum(axis=1))
+    # print(df.sum(axis=1))
 
     # results = {}
     # for key in df.index:
@@ -358,9 +360,9 @@ where
 
 def plot_balancesheet(ts_code, render=None):
     dfs = []
-    # d1 = get_balancesheet_df(ts_code, 2019)
-    # if d1 is not None:
-    #     dfs.append(d1)
+    d1 = get_balancesheet_df(ts_code, 2019)
+    if d1 is not None:
+        dfs.append(d1)
     d2 = get_balancesheet_df(ts_code)
     if d2 is not None:
         dfs.append(d2)
