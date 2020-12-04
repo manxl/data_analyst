@@ -514,7 +514,12 @@ class DailyBasicController(BaseController):
         df.to_sql(self.get_table_name(), get_engine(), dtype=dtype, index=False, if_exists='append')
 
     def _get_nearest_cal_date(self):
-        sql = 'select cal_date from trade_cal_detail  where cal_date  <= curdate() order by cal_date desc limit 1;'
+
+        if time.localtime().tm_hour < 19:
+            di = 1
+        else:
+            di = 0
+        sql = f'select cal_date from trade_cal_detail  where cal_date  <= curdate() - {di} order by cal_date desc limit 1;'
         df = pd.read_sql_query(sql, get_engine())
         cal_date = df.iloc[0]['cal_date']
         if self.his is not None and cal_date <= self.his.end_date:
