@@ -1,8 +1,16 @@
 import pandas as pd
+import datetime
 from dao.db_pool import get_engine
 from conf.config import *
 
 from analyse.my_data_sql import *
+
+
+def get_liability(y=None):
+    if y is None:
+        y = datetime.datetime.now().year
+    aaa = pd.read_sql_query(f"select * from liability  where y = {y};", get_engine()).iloc[0, 2]
+    return aaa / 100
 
 
 def get_nincome_roe_pe_meta(ts_code):

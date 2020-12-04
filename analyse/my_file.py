@@ -6,7 +6,7 @@ from openpyxl import Workbook
 import json
 from openpyxl.styles import numbers
 import numpy as np
-
+from analyse.my_data import *
 
 
 # for i in df.iterrows():
@@ -204,6 +204,7 @@ def my_e3(ts_code, y, m=None, limit=5):
 
     print(sql)
 
+
 def tangchao(ts_code, y):
     aaa = pd.read_sql_query(f"select * from liability  where y = {y};", get_engine()).iloc[0, 2]
     aaa = aaa / 100
@@ -287,4 +288,104 @@ def tangchao(ts_code, y):
     print("calc_market_price:{}".format(calc_market_value / total_share))
     print("calc_market_price_count:{}".format(calc_market_value * 0.7 / total_share))
 
-my_e3('600516.SH', 2020)
+
+def get_calc_param():
+    param = {}
+    # param['aaa'] = get_liability()
+    param['aaa'] = 0.05
+    param['premium'] = 0.03
+    param['inflation'] = 0
+    param['discount'] = param['aaa'] + param['premium'] + param['inflation']
+    param['enternity'] = 0.05
+    param['calc_discount'] = 0.8
+    param['safety_margin'] = 0.7
+    return param
+
+
+def my_calc(ts_code, param):
+    discount = param['discount']
+    enternity = param['enternity']
+    calc_discount = param['calc_discount']
+    # get total share
+    daily = pd.read_sql_query(
+        f"select close,total_share,total_mv,pe,pe_ttm from daily_basic where ts_code = '{ts_code}';",
+        get_engine())
+
+    total_share = daily.iloc[0, 1] / 10000
+    total_mv = daily.iloc[0, 2] / 10000
+    pe = daily.iloc[0, 3]
+    pe_ttm = daily.iloc[0, 4]
+
+    # growth
+    growth_df = pd.read_sql_query(
+        f"select avg(netprofit_yoy) as growth ,avg(roe) as as_pe from i_data where ts_code = '{ts_code}';",
+        get_engine())
+
+    growth = growth_df.iloc[0, 0] / 100
+    growth *= calc_discount
+
+    # income
+    y = datetime.datetime.now().year
+    income = pd.read_sql_query(
+        f"select y,m,n_income/100000000 as n_income from income where ts_code= '{ts_code}' and y = {y} -1 and m = 12 ",
+        get_engine())
+
+    income_0 = income.iloc[0, 2]
+    income_1 = income_0 * (1 + growth) ** 1 / (1 + discount) ** 1
+    income_2 = income_0 * (1 + growth) ** 2 / (1 + discount) ** 2
+    income_3 = income_0 * (1 + growth) ** 3 / (1 + discount) ** 3
+
+    # Cash Flow Discount Calc
+    forever = income_3 * (1 + enternity) / (discount - enternity)
+    estimate_value = income_1 + income_2 + income_3 + forever
+
+    chipe_rate = total_mv / estimate_value
+
+    estimate_value_safety_margin = estimate_value * param['safety_margin']
+
+    # Tangchao Eazy Calc
+    as_pe = growth_df.iloc[0, 1]
+    tangchao_calc = income_3 * as_pe
+    # tangchao_calc = tangchao_calc * param['safety_margin']
+
+    if total_mv < tangchao_calc * 0.5:
+        tangchao_flag = 1
+    elif total_mv < tangchao_calc * 0.8333:
+        tangchao_flag = 2
+    elif total_mv < tangchao_calc * 1.3333:
+        tangchao_flag = 3
+    elif total_mv < tangchao_calc * 1.6666:
+        tangchao_flag = 4
+    else:
+        tangchao_flag = 5
+
+    result = locals()
+    del result['param']
+    del result['daily']
+    del result['income']
+    del result['growth_df']
+
+    print(result)
+    return result
+
+
+def loop_codes():
+    param = get_calc_param()
+    # codes = pd.read_sql_query("select DISTINCT ts_code from i_data where debt_to_assets < 50 ts_code = '600177.SH' ;", get_engine())
+    codes = pd.read_sql_query("""select DISTINCT ts_code from i_data   ;""", get_engine())
+    mps = []
+    for i, row in codes.iterrows():
+        t = my_calc(row['ts_code'], param)
+        mps.append(t)
+    df = pd.DataFrame(mps)
+    df.to_sql('i_calc', get_engine(), index=False, if_exists='replace')
+
+
+if __name__ == '__main__':
+    #
+    # r = my_calc(TEST_TS_CODE_GZMT, param)
+    # from collections import OrderedDict
+    #
+    # r = OrderedDict(sorted(r.items(), key=lambda t: t[0], reverse=True))
+    # print(r)
+    loop_codes()

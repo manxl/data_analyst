@@ -8,13 +8,13 @@ from dao.db_pool import get_engine
 
 import matplotlib.pyplot as plt
 from matplotlib.ticker import FuncFormatter
+from matplotlib.gridspec import GridSpec
 from analyse.my_data import *
 
 p = os.path.dirname
 
 
 def plot_nincome_roe_pe_meta(ts_code, render=None):
-    from matplotlib.gridspec import GridSpec
     df = get_nincome_roe_pe_meta(ts_code)
     t = df.index
 

@@ -95,7 +95,7 @@ class BaseDao(metaclass=abc.ABCMeta):
             return __class__.type_mapping[self._interface]
         df = df if df is not None else self._df
         mapping = {}
-        for name, dt in df.dtypes.iteritems():
+        for name, dt in df.dtypes.incomesems():
             if dt is dtype('object'):
                 if '_date' in name:
                     mapping[name] = DATE()

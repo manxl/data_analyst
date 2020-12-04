@@ -3,6 +3,7 @@ import dao.db_dao as dao
 import pandas as pd
 from time import time
 from dao.db_pool import get_engine
+from conf.config import *
 # import matplotlib
 # matplotlib.use('Agg')
 # from matplotlib import pyplot as mp
@@ -63,8 +64,10 @@ def test_one_repay(ts_code, start_year, period):
 
 
 class Analyser:
-    def __init__(self, y, m, earning_duration=None, earning_mean_year=None, earning_inc_ratio=None, underrate_ep_2_3A_multi=None,
-                 underrate_divident_2_3A=None, low_percent=None, underrate_price_2_touch_assert=None, underrate_price_2_cur_ass_val=None,
+    def __init__(self, y, m, earning_duration=None, earning_mean_year=None, earning_inc_ratio=None,
+                 underrate_ep_2_3A_multi=None,
+                 underrate_divident_2_3A=None, low_percent=None, underrate_price_2_touch_assert=None,
+                 underrate_price_2_cur_ass_val=None,
                  ):
         self.__y = y
         self.__m = m
@@ -161,11 +164,13 @@ class Analyser:
         print('=' * 32, 'analyse cost:', time() - start)
         start = time()
 
-        detail_list = dao.get_fina(df.ts_code, self.__y - self.earning_duration - self.earning_mean_year, self.__y, self.__m)
+        detail_list = dao.get_fina(df.ts_code, self.__y - self.earning_duration - self.earning_mean_year, self.__y,
+                                   self.__m)
         print('=' * 32, 'load cost:', time() - start)
         start = time()
         self.stat['earning_power'] = df['ts_code'].apply(
-            lambda x: check_earning_power(x, self.__y, self.earning_duration, self.earning_mean_year, self.__m, self.earning_inc_ratio,
+            lambda x: check_earning_power(x, self.__y, self.earning_duration, self.earning_mean_year, self.__m,
+                                          self.earning_inc_ratio,
                                           data=detail_list))
 
         print('=' * 32, 'analyse cost:', time() - start)
@@ -292,7 +297,7 @@ def show_2():
     mp.rcParams['font.sans-serif'] = ['KaiTi']
     mp.rcParams['axes.unicode_minus'] = False
     # target_list = ['洋河股份', '贵州茅台', '分众传媒', '古井贡酒', '海康威视', '科大讯飞','招商银行','中国平安']
-    target_list = ['洋河股份', '贵州茅台', '分众传媒', '古井贡酒', '海康威视', '科大讯飞','招商银行','中国平安']
+    target_list = ['洋河股份', '贵州茅台', '分众传媒', '古井贡酒', '海康威视', '科大讯飞', '招商银行', '中国平安']
 
     sql = "select roe,y from fina_indicator where ts_code = '{}' and m = 12 order by end_date desc limit 10;"
     for name in target_list:
@@ -305,8 +310,225 @@ def show_2():
     mp.show()
 
 
+class IncrementCalculator:
+    def __init__(self, ts_code, start, end):
+        self.start = start
+        self.end = end
+        self.ts_code = ts_code
+        self._market = None
+        self._premium = None
+        self._capital = 10000
+        self.final = None
+        self.discount = 0.05
+        self.results = None
+
+    def load(self):
+        # load market
+        load_market = f"""select ts_code,y,m,close from daily_basic_month 
+                            where ts_code = '{self.ts_code}' and {self.end} >= y and y>= {self.start}  
+                                    and m = 6 order by y ,m;"""
+        load_premium = f"""select * from dividend_stat where ts_code = '{self.ts_code}' and {self.end} >= y and y>= {self.start}  """;
+
+        market_df = pd.read_sql_query(load_market, get_engine())
+        premium_df = pd.read_sql_query(load_premium, get_engine())
+
+        if len(market_df) < (self.end - self.start + 1):
+            raise LookupError('Not A Good Data Sample.')
+
+        premium_dict = {}
+        for i, row in premium_df.iterrows():
+            premium_dict[row['y']] = row
+        self._market = market_df
+        self._premium = premium_dict
+
+    def calc(self):
+        ss_end = None
+        results = []
+        self.results = results
+        for i, market in self._market.iterrows():
+            close = market['close']
+
+            if ss_end is None:
+                ss_end = self._capital / close
+
+            ss_start = ss_end
+
+            y = market['y']
+            m = market['m']
+            print('calc ing', y, m)
+
+            if m == 6 and y in self._premium:
+                div = self._premium[y]
+                stk_div = div['stk_div']
+                cash_div = div['cash_div']
+                got_cash = ss_start * cash_div
+                got_cash2stk = got_cash / close
+                got_stk = ss_start * stk_div
+                ss_end = ss_start + got_cash2stk + got_stk
+            else:
+                stk_div = 0
+                cash_div = 0
+                got_cash = 0
+                got_cash2stk = 0
+                got_stk = 0
+            mv = ss_end * close
+            yield_rate = (mv - self._capital) / self._capital
+            yield_dicount = yield_rate / (1 + self.discount) ** (i + 1)
+
+            stk_div = 0 if not stk_div else stk_div
+            cash_div = 0 if not cash_div else cash_div
+            got_cash = 0 if not got_cash else got_cash
+            got_cash2stk = 0 if not got_cash2stk else got_cash2stk
+            got_stk = 0 if not got_stk else got_stk
+
+            result = {'y': y, 'stk_div': stk_div, 'cash_div': cash_div, 'close': close, 'ss_start': ss_start,
+                      'got_cash': got_cash, 'got_cash2stk': got_cash2stk, 'got_stk': got_stk, 'ss_end': ss_end,
+                      'mv': mv, 'yield_rate': yield_rate, 'yield_discount': yield_dicount}
+            self.final = yield_dicount
+            results.append(result)
+
+    def show(self):
+        self.plot()
+
+    def plot(self):
+        import matplotlib.pyplot as plt
+        from matplotlib.gridspec import GridSpec
+
+        df = pd.DataFrame(self.results)
+        df = df.set_index(['y'])
+
+        fig = plt.figure(constrained_layout=True, figsize=(12, 6))
+        gs = GridSpec(3, 3, figure=fig)
+        down = fig.add_subplot(gs[:2, :])
+        # sub = up.twinx()  # instantiate a second axes that shares the same x-axis
+        down1 = fig.add_subplot(gs[2, :])
+        # df[['yield_rate']].plot(kind='semilogy', ax=down)
+        # k = down.semilogy(df.index, df['yield_rate'])
+        # rects = df[['yield_rate']].plot(kind='bar', ax=down)
+        df['yield_rate'] = round(df['yield_rate'], 4)
+        df['color'] = df['yield_rate'].apply(lambda x: 'r' if x < 0 else 'b')
+        rects = down.bar(df.index, df['yield_rate'], 0.5, color=df['color'].tolist(), label='yield_rate')
+
+        def autolabel(rects, ax):
+            for rect in rects:
+                height = rect.get_height()
+                ax.annotate('{}'.format(height),
+                            xy=(rect.get_x() + rect.get_width() / 2, height),
+                            xytext=(0, 3),  # 3 points vertical offset
+                            textcoords="offset points",
+                            ha='center', va='bottom')
+
+        autolabel(rects, down)
+        # df[['mv']].plot(ax=sub)
+        plt.show()
+
+    def process(self):
+        self.load()
+        self.calc()
+        # self.show()
+        return self
+
+
+def mult_calc(index_code, start, end, year_num):
+    ics = []
+    stat_years = {}
+    for y in range(start, end):
+        print(y)
+        sql = f"""select * from index_weight where index_code = '000016.SH' and y = {y - 1} and m = 12
+and con_code in (
+    select ts_code from fina_indicator f where y = {y - 1} and m = 12 and roe > 15 and f.debt_to_assets < 50
+)"""
+        sql = f"""select distinct ts_code as con_code from i_data i where i.debt_to_assets < 50 and pe_ttm < aaa_pe/2 and i.y = {y};"""
+
+        df = pd.read_sql_query(sql, get_engine())
+
+        stat = {'sum': 0, 'count': 0}
+        stat_years[y] = stat
+        for i, row in df.iterrows():
+            try:
+                ic = IncrementCalculator(row['con_code'], y, y + year_num).process()
+            except LookupError as m_e:
+                print('LookupError' + row['con_code'])
+            else:
+                ics.append(ic)
+                stat['sum'] = stat['sum'] + ic.final
+                stat['count'] = stat['count'] + 1
+        stat['avg'] = stat['sum'] / stat['count']
+
+    from openpyxl import Workbook
+    from openpyxl.styles import numbers
+
+    from openpyxl.styles import Alignment
+    from openpyxl.styles import PatternFill, colors
+
+    red = PatternFill("solid", fgColor=colors.RED)
+    green = PatternFill("solid", fgColor=colors.GREEN)
+
+    wb = Workbook()
+    wb.remove(wb.active)
+    sheet = wb.create_sheet(title='{} {}-{}'.format(ts_code, start, end))
+
+    sheet.cell(1, 1, "ts_code")
+    sheet.cell(1, 2, "start")
+    sheet.cell(1, 3, "end")
+    for i in range(year_num):
+        sheet.cell(1, 4 + i, i + 1)
+
+    col_list = "y,stk_div,cash_div,close,ss_start,ss_end,mv,yield_rate,yield_discount".split(',')
+
+    row = 2
+    row_span = len(col_list)
+    for ic in ics:
+        cell = sheet.cell(row, 1, ic.ts_code)
+        sheet.merge_cells(start_row=row, start_column=1, end_row=row + row_span - 1, end_column=1)
+        cell.alignment = Alignment(horizontal='center', vertical='center')
+        cell = sheet.cell(row, 2, ic.start)
+        sheet.merge_cells(start_row=row, start_column=2, end_row=row + row_span - 1, end_column=2)
+        cell.alignment = Alignment(horizontal='center', vertical='center')
+        cell = sheet.cell(row, 3, ic.end)
+        sheet.merge_cells(start_row=row, start_column=3, end_row=row + row_span - 1, end_column=3)
+        cell.alignment = Alignment(horizontal='center', vertical='center')
+
+        for y_d in range(len(ic.results)):
+            result = ic.results[y_d]
+            i = 0
+            for column in col_list:
+                # val = float(result[column])
+                val = result[column]
+                c = sheet.cell(row + i, 4 + y_d, val)
+                if type(val) is float:
+                    c.number_format = numbers.BUILTIN_FORMATS[4]
+
+                if column == 'yield_rate':
+                    if val < 0:
+                        c.fill = red
+                    else:
+                        c.fill = green
+                i += 1
+
+        row += row_span
+
+    wb.save("formatted.xlsx")
+    for key, val in stat_years.items():
+        print(key, val)
+
+
 if __name__ == '__main__':
-    # dao.before_2_clean()
-    # analys_array()
     # show()
-    show_2()
+    # show_2()
+
+    ts_code = TEST_TS_CODE_GZMT
+    start = 2010
+    end = 2016
+
+    mult_calc(ts_code, start, end, 5)
+    """
+    ts_code = '601088.SH'
+    ic = IncrementCalculator(ts_code, 2015, 2020);
+    try:
+        ic.process()
+    except LookupError as m_e:
+        print('LookupError')
+    else:
+        print(ic.results)
+    """

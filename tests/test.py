@@ -261,4 +261,11 @@ if __name__ == '__main__':
     # survey(results, names)
     # plt.show()
 
-    plt.show()
+    # plt.show()
+
+    a = [{'a': 1, 'b': 2}, {'a': 1, 'b': 2}, {'a': 1, 'b': 2}, {'a': 1, 'b': 2}]
+    df = pd.DataFrame(a)
+    print(df)
+    k = x
+    a['a'].apply(lambda x:x)
+
