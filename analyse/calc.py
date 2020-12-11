@@ -441,36 +441,7 @@ and con_code in (
         sql = f"""select distinct ts_code as con_code from i_data i where i.debt_to_assets < 50 and pe_ttm < aaa_pe/2 and i.y = {y};"""
 
         sql = f"""
-select ts_code as con_code,b.* from 
-	(
-	select 
-		s.name,s.industry,a.*
-		,
-			d.pe as d_pe,
-			d.pe /a_pe as chipe_flag
-	from (
-		select 
-			f.ts_code  ,count(*) as c , avg(f.roe) ar,min(f.roe) mr,avg(m.pe) as a_pe
-		from 
-			fina_indicator f,liability l,daily_basic_month m
-		where 
-			f.y = l.y 
-
-			and f.ts_code = m.ts_code and f.y = m.y and f.m = m.m
-			
-			and {y} > f.y and f.y >= {y} - 10 and f.m = 12 
-			and debt_to_assets < 50
-
-		GROUP BY
-			f.ts_code
-		HAVING c = 10 and ar > 20  and mr >15
-		) a ,stock_basic s,daily_basic d
-	where 1= 1
-		and a.ts_code = s.ts_code
-		and a.ts_code = d.ts_code
-) b
-where  ts_code != '600519.SH' # d_pe < a_pe and
-order by chipe_flag
+one_fina
 """
 
         df = pd.read_sql_query(sql, get_engine())

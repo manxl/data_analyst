@@ -152,4 +152,6 @@ def plot_balancesheet(ts_code, render=None):
 
 
 if __name__ == '__main__':
-    plot_balancesheet('002027.SZ', render='a')
+    # plot_balancesheet('002027.SZ', render='a')
+    ts_code = '002032.SZ'
+    plot_nincome_roe_pe_meta(ts_code, render='a')
