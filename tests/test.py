@@ -254,18 +254,36 @@ def survey_df(dfs):
     return fig, ax
 
 
+def test_():
+    lst = ['MSCI', 'CSI', 'SSE', 'SZSE', 'CICC', 'SW', 'OTH']
+    target = '512800'
+    for code in lst:
+        print(f'loading {code}')
+        df = get_pro().index_basic(market=code)
+        d = df[df['ts_code'].str.contains(target)]
+        if len(d) > 0:
+            print('code:', code)
+            print(d)
+
+
+def test_socket_client():
+    import socket  # 导入 socket 模块
+    s = socket.socket()  # 创建 socket 对象
+    host = socket.gethostname()  # 获取本地主机名
+    port = 33306  # 设置端口号
+
+    s.connect((host, port))
+    s.send(b'i love freedom.')
+    # s.recv(1024)
+    s.close()
+
+
 if __name__ == '__main__':
     # test_set_color()
     # test_set_percent()
     # names, results = get_data(TEST_TS_CODE_GZMT)
     # survey(results, names)
     # plt.show()
-
     # plt.show()
-
-    a = [{'a': 1, 'b': 2}, {'a': 1, 'b': 2}, {'a': 1, 'b': 2}, {'a': 1, 'b': 2}]
-    df = pd.DataFrame(a)
-    print(df)
-    k = x
-    a['a'].apply(lambda x:x)
-
+    # test_()
+    test_socket_client()

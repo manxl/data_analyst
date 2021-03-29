@@ -82,6 +82,9 @@ def set_session_ts_code():
         sql = """select index_code from index_weight where index_code like '{}%%'""".format(index_code)
         df = pd.read_sql_query(sql, get_engine())
         if len(df) == 0:
+            iwc = IndexWeightController(index_code)
+            iwc.init()
+
             return 'error ts_code'
         ts_code = df.iloc[0, 0]
         session['index_code'] = ts_code

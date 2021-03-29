@@ -73,8 +73,8 @@ def plot_hbar_by_dfs(dfs, render=None):
     #     else:
     #         ax = axs[ax_idx]
 
-    for row in range(2):
-        for col in range(2):
+    for row in range(len(dfs)):
+        for col in range(len(dfs[row])):
             df = dfs[row][col]
             ax = axs[row][col]
 
